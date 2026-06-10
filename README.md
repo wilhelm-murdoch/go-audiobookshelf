@@ -81,7 +81,8 @@ Other options:
 - `WithHTTPClient`
 - `WithTimeout`
 - `WithUserAgent`
-- `WithInsecureSkipVerify`.
+- `WithInsecureSkipVerify`
+- `WithDebug` (see [Debugging](#debugging)).
 
 ## Resource handles
 
@@ -132,6 +133,19 @@ if errors.As(err, &apiErr) {
 	log.Printf("%s %s → %d: %s", apiErr.Method, apiErr.Path, apiErr.StatusCode, apiErr.Message)
 }
 ```
+
+## Debugging
+
+`WithDebug` logs every request and response — method, URL, headers, and body — to any `io.Writer`, which is the fastest way to see what the server actually sends when a response won't decode:
+
+```go
+client := audiobookshelf.NewClient("https://abs.example.com",
+	audiobookshelf.WithToken("***"),
+	audiobookshelf.WithDebug(os.Stderr),
+)
+```
+
+It composes with `WithHTTPClient`, redacts the `Authorization` and cookie headers, and skips binary and multipart bodies so it won't dump cover images or buffer uploads. **It is a debugging aid, not a production logger:** request/response bodies are printed verbatim and may contain secrets (notably the username and password sent by `Login`), so never enable it against an untrusted network and scrub the output before sharing it.
 
 ## API coverage
 
