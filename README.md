@@ -97,14 +97,39 @@ session, _ := item.Play(ctx, nil)
 
 Every operation is also available directly on the client, so a fetched handle is never required when you already have an ID.
 
+## Pagination
+
+List endpoints return a `Page[T]` envelope with the results plus `Total`, `Limit`, and `Page`. Pages are **0-indexed**, and a zero `Limit` lets the server apply its own default:
+
+```go
+page, err := client.LibraryItems(ctx, libraryID, &audiobookshelf.LibraryItemListParams{
+	Limit: 50,
+	Page:  1, // the second page
+	Sort:  "media.metadata.title",
+})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Printf("page %d of %d total items\n", page.Page, page.Total)
+```
+
 ## Error handling
 
-Any 4xx/5xx response is returned as an `*audiobookshelf.Error` carrying the method, path, status code, and response body. Helpers cover the common cases:
+Any 4xx/5xx response is returned as an `*audiobookshelf.Error` carrying the method, path, status code, and response body. Use the helpers for common statuses, or `errors.As` for the full detail:
 
 ```go
 item, err := client.LibraryItem(ctx, id, nil)
-if audiobookshelf.IsNotFound(err) {
-	// 404
+
+switch {
+case audiobookshelf.IsNotFound(err):     // 404
+case audiobookshelf.IsUnauthorized(err): // 401
+case audiobookshelf.IsForbidden(err):    // 403
+case audiobookshelf.IsBadRequest(err):   // 400
+}
+
+var apiErr *audiobookshelf.Error
+if errors.As(err, &apiErr) {
+	log.Printf("%s %s → %d: %s", apiErr.Method, apiErr.Path, apiErr.StatusCode, apiErr.Message)
 }
 ```
 
