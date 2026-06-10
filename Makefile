@@ -38,6 +38,12 @@ cover:
 	@echo -e "$(ATTN_COLOR)==> $@ $(NO_COLOR)"
 	@CGO_ENABLED=0 go test -count=1 -cover ./...
 
+.PHONY: integration
+integration:
+	@echo -e "$(ATTN_COLOR)==> $@ $(NO_COLOR)"
+	@test -n "$(ABS_BASE_URL)" || { echo "set ABS_BASE_URL to a running audiobookshelf server"; exit 1; }
+	@CGO_ENABLED=0 go test -tags=integration -count=1 .
+
 .PHONY: vet
 vet:
 	@echo -e "$(ATTN_COLOR)==> $@ $(NO_COLOR)"

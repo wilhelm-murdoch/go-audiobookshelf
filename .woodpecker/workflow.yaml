@@ -1,6 +1,17 @@
 when:
   - event: [cron, manual, push, pull_request]
 
+# A throwaway Audiobookshelf server, shared on the workflow network and
+# reachable by the service name. It is initialized and torn down per run,
+# so no persistent volumes are needed.
+services:
+  - name: audiobookshelf
+    # TODO: pin to a specific released tag once verified against CI;
+    # see the tags at ghcr.io/advplyr/audiobookshelf.
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    environment:
+      PORT: "13378"
+
 steps:
   - name: vet
     image: golang:1.26
@@ -20,6 +31,18 @@ steps:
     image: golangci/golangci-lint:v2.12.2
     commands:
       - golangci-lint run ./...
+
+  # Functional tests against the live audiobookshelf service. The suite
+  # polls the server for readiness, initializes the root user, and runs the
+  # media-free slice of the API. Gated by the "integration" build tag and
+  # ABS_BASE_URL so it never runs in the unit suite above.
+  - name: integration
+    image: golang:1.26
+    environment:
+      CGO_ENABLED: "0"
+      ABS_BASE_URL: http://audiobookshelf:13378
+    commands:
+      - go test -tags=integration -count=1 .
 
   - name: notify-success
     image: curlimages/curl
