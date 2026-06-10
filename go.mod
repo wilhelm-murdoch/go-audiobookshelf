@@ -1,3 +1,3 @@
-module git.nightcity.network/nightcity-network/go-audiobookshelf
+module github.com/wilhelm-murdoch/go-audiobookshelf
 
-go 1.26
+go 1.26.4
