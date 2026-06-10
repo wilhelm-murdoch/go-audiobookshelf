@@ -9,6 +9,12 @@ services:
     # TODO: pin to a specific released tag once verified against CI;
     # see the tags at ghcr.io/advplyr/audiobookshelf.
     image: ghcr.io/advplyr/audiobookshelf:latest
+    # Woodpecker sets every container's working directory to the cloned
+    # repo workspace. Audiobookshelf's image starts with a *relative*
+    # `node index.js`, so the changed workdir makes Node look for the entry
+    # script in the workspace and fail with MODULE_NOT_FOUND. Start it
+    # explicitly from its own app directory instead.
+    entrypoint: ["/bin/sh", "-c", "cd /app && node index.js"]
     environment:
       PORT: "13378"
 
