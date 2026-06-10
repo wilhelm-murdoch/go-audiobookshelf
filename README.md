@@ -119,4 +119,14 @@ For anything not modeled, the generic escape hatches `client.Get`, `Post`, `Patc
 
 ## Notes on types
 
-The API returns most schemas in base, minified, and expanded variants. This library uses superset structs instead of tripling the type count. Fields absent from a variant are simply zero-valued. Timestamps are milliseconds since the Unix epoch in `int64` while durations are seconds.
+The API returns most schemas in base, minified, and expanded variants. This library uses superset structs instead of tripling the type count. Fields absent from a variant are simply zero-valued. Timestamps use the `Millis` type and durations use the `Seconds` type; both are plain JSON numbers on the wire and carry helpers:
+
+```go
+item, _ := client.LibraryItem(ctx, id, nil)
+added := item.AddedAt.Time()            // time.Time (UTC), zero when unset
+length := item.Media.Duration.Duration() // time.Duration
+
+// Building requests works the other way:
+cur := audiobookshelf.SecondsFromDuration(90 * time.Second)
+_ = client.UpdateMyMediaProgress(ctx, id, "", &audiobookshelf.MediaProgressUpdate{CurrentTime: &cur})
+```

@@ -146,7 +146,7 @@ type LibraryStats struct {
 	TotalItems     int                `json:"totalItems"`
 	TotalAuthors   int                `json:"totalAuthors"`
 	TotalGenres    int                `json:"totalGenres"`
-	TotalDuration  float64            `json:"totalDuration"`
+	TotalDuration  Seconds            `json:"totalDuration"`
 	NumAudioTracks int                `json:"numAudioTracks"`
 	TotalSize      int64              `json:"totalSize"`
 	LongestItems   []LibraryStatsItem `json:"longestItems,omitempty"`
@@ -168,7 +168,7 @@ type LibraryStats struct {
 type LibraryStatsItem struct {
 	ID       string  `json:"id"`
 	Title    string  `json:"title"`
-	Duration float64 `json:"duration,omitempty"`
+	Duration Seconds `json:"duration,omitempty"`
 	Size     int64   `json:"size,omitempty"`
 }
 

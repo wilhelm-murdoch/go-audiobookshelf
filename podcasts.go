@@ -32,7 +32,7 @@ type PodcastEpisodeUpdate struct {
 	Description *string                  `json:"description,omitempty"`
 	Enclosure   *PodcastEpisodeEnclosure `json:"enclosure,omitempty"`
 	PubDate     *string                  `json:"pubDate,omitempty"`
-	PublishedAt *int64                   `json:"publishedAt,omitempty"`
+	PublishedAt *Millis                  `json:"publishedAt,omitempty"`
 }
 
 // PodcastSearchEpisode is one match of SearchPodcastFeedForEpisodes.

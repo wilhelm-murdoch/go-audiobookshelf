@@ -46,7 +46,7 @@ type MediaUpdate struct {
 	Chapters                 []Chapter      `json:"chapters,omitempty"`
 	AutoDownloadEpisodes     *bool          `json:"autoDownloadEpisodes,omitempty"`
 	AutoDownloadSchedule     *string        `json:"autoDownloadSchedule,omitempty"`
-	LastEpisodeCheck         *int64         `json:"lastEpisodeCheck,omitempty"`
+	LastEpisodeCheck         *Millis        `json:"lastEpisodeCheck,omitempty"`
 	MaxEpisodesToKeep        *int           `json:"maxEpisodesToKeep,omitempty"`
 	MaxNewEpisodesToDownload *int           `json:"maxNewEpisodesToDownload,omitempty"`
 }

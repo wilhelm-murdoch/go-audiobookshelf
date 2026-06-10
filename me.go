@@ -10,15 +10,15 @@ import (
 // set fields are sent.
 type MediaProgressUpdate struct {
 	// Duration is the total duration of the media in seconds.
-	Duration *float64 `json:"duration,omitempty"`
+	Duration *Seconds `json:"duration,omitempty"`
 	// Progress is the completion fraction of the media (0..1).
 	Progress *float64 `json:"progress,omitempty"`
 	// CurrentTime is the playback position in seconds.
-	CurrentTime               *float64 `json:"currentTime,omitempty"`
+	CurrentTime               *Seconds `json:"currentTime,omitempty"`
 	IsFinished                *bool    `json:"isFinished,omitempty"`
 	HideFromContinueListening *bool    `json:"hideFromContinueListening,omitempty"`
-	FinishedAt                *int64   `json:"finishedAt,omitempty"`
-	StartedAt                 *int64   `json:"startedAt,omitempty"`
+	FinishedAt                *Millis  `json:"finishedAt,omitempty"`
+	StartedAt                 *Millis  `json:"startedAt,omitempty"`
 }
 
 // MediaProgressBatchUpdate is one entry of BatchUpdateMyMediaProgress.

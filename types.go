@@ -8,8 +8,10 @@ import (
 // The Audiobookshelf API returns most schemas in several variants (base,
 // minified, expanded). Rather than tripling the type count, this library
 // uses superset structs: fields only present in some variants are tagged
-// omitempty and are zero-valued when not returned. Timestamps are
-// milliseconds since the Unix epoch, durations are seconds.
+// omitempty and are zero-valued when not returned. Timestamp fields use
+// the Millis type (milliseconds since the Unix epoch) and duration fields
+// use the Seconds type; both are numeric and expose Time/Duration helpers
+// (see timestamps.go).
 
 // Library is a content library on the server.
 type Library struct {
@@ -24,8 +26,8 @@ type Library struct {
 	MediaType  string           `json:"mediaType,omitempty"`
 	Provider   string           `json:"provider,omitempty"`
 	Settings   *LibrarySettings `json:"settings,omitempty"`
-	CreatedAt  int64            `json:"createdAt,omitempty"`
-	LastUpdate int64            `json:"lastUpdate,omitempty"`
+	CreatedAt  Millis           `json:"createdAt,omitempty"`
+	LastUpdate Millis           `json:"lastUpdate,omitempty"`
 }
 
 // Folder is a folder of a library on the server. Only FullPath should be
@@ -34,7 +36,7 @@ type Folder struct {
 	ID        string `json:"id,omitempty"`
 	FullPath  string `json:"fullPath"`
 	LibraryID string `json:"libraryId,omitempty"`
-	AddedAt   int64  `json:"addedAt,omitempty"`
+	AddedAt   Millis `json:"addedAt,omitempty"`
 }
 
 // LibrarySettings are the settings of a library.
@@ -69,12 +71,12 @@ type LibraryItem struct {
 	Path        string `json:"path,omitempty"`
 	RelPath     string `json:"relPath,omitempty"`
 	IsFile      bool   `json:"isFile,omitempty"`
-	MtimeMs     int64  `json:"mtimeMs,omitempty"`
-	CtimeMs     int64  `json:"ctimeMs,omitempty"`
-	BirthtimeMs int64  `json:"birthtimeMs,omitempty"`
-	AddedAt     int64  `json:"addedAt,omitempty"`
-	UpdatedAt   int64  `json:"updatedAt,omitempty"`
-	LastScan    int64  `json:"lastScan,omitempty"`
+	MtimeMs     Millis `json:"mtimeMs,omitempty"`
+	CtimeMs     Millis `json:"ctimeMs,omitempty"`
+	BirthtimeMs Millis `json:"birthtimeMs,omitempty"`
+	AddedAt     Millis `json:"addedAt,omitempty"`
+	UpdatedAt   Millis `json:"updatedAt,omitempty"`
+	LastScan    Millis `json:"lastScan,omitempty"`
 	ScanVersion string `json:"scanVersion,omitempty"`
 	IsMissing   bool   `json:"isMissing,omitempty"`
 	IsInvalid   bool   `json:"isInvalid,omitempty"`
@@ -95,7 +97,7 @@ type LibraryItem struct {
 
 	// Set on results of Client.MyItemsInProgress.
 	RecentEpisode      *PodcastEpisode `json:"recentEpisode,omitempty"`
-	ProgressLastUpdate int64           `json:"progressLastUpdate,omitempty"`
+	ProgressLastUpdate Millis          `json:"progressLastUpdate,omitempty"`
 }
 
 // Media is the media of a library item. It is a superset of the Book and
@@ -125,12 +127,12 @@ type Media struct {
 	NumEpisodes              int              `json:"numEpisodes,omitempty"`
 	AutoDownloadEpisodes     bool             `json:"autoDownloadEpisodes,omitempty"`
 	AutoDownloadSchedule     string           `json:"autoDownloadSchedule,omitempty"`
-	LastEpisodeCheck         int64            `json:"lastEpisodeCheck,omitempty"`
+	LastEpisodeCheck         Millis           `json:"lastEpisodeCheck,omitempty"`
 	MaxEpisodesToKeep        int              `json:"maxEpisodesToKeep,omitempty"`
 	MaxNewEpisodesToDownload int              `json:"maxNewEpisodesToDownload,omitempty"`
 
 	// Minified/expanded variants only.
-	Duration float64 `json:"duration,omitempty"`
+	Duration Seconds `json:"duration,omitempty"`
 	Size     int64   `json:"size,omitempty"`
 }
 
@@ -207,8 +209,8 @@ func (s *SeriesSequences) UnmarshalJSON(data []byte) error {
 // Chapter is a chapter of a book.
 type Chapter struct {
 	ID    int     `json:"id"`
-	Start float64 `json:"start"`
-	End   float64 `json:"end"`
+	Start Seconds `json:"start"`
+	End   Seconds `json:"end"`
 	Title string  `json:"title"`
 }
 
@@ -217,8 +219,8 @@ type AudioFile struct {
 	Index                int            `json:"index,omitempty"`
 	Ino                  string         `json:"ino,omitempty"`
 	Metadata             *FileMetadata  `json:"metadata,omitempty"`
-	AddedAt              int64          `json:"addedAt,omitempty"`
-	UpdatedAt            int64          `json:"updatedAt,omitempty"`
+	AddedAt              Millis         `json:"addedAt,omitempty"`
+	UpdatedAt            Millis         `json:"updatedAt,omitempty"`
 	TrackNumFromMeta     *int           `json:"trackNumFromMeta,omitempty"`
 	DiscNumFromMeta      *int           `json:"discNumFromMeta,omitempty"`
 	TrackNumFromFilename *int           `json:"trackNumFromFilename,omitempty"`
@@ -227,7 +229,7 @@ type AudioFile struct {
 	Exclude              bool           `json:"exclude,omitempty"`
 	Error                string         `json:"error,omitempty"`
 	Format               string         `json:"format,omitempty"`
-	Duration             float64        `json:"duration,omitempty"`
+	Duration             Seconds        `json:"duration,omitempty"`
 	BitRate              int            `json:"bitRate,omitempty"`
 	Language             string         `json:"language,omitempty"`
 	Codec                string         `json:"codec,omitempty"`
@@ -278,8 +280,8 @@ type AudioMetaTags struct {
 // AudioTrack is a playable audio track derived from an audio file.
 type AudioTrack struct {
 	Index       int           `json:"index,omitempty"`
-	StartOffset float64       `json:"startOffset,omitempty"`
-	Duration    float64       `json:"duration,omitempty"`
+	StartOffset Seconds       `json:"startOffset,omitempty"`
+	Duration    Seconds       `json:"duration,omitempty"`
 	Title       string        `json:"title,omitempty"`
 	ContentURL  string        `json:"contentUrl,omitempty"`
 	MimeType    string        `json:"mimeType,omitempty"`
@@ -291,16 +293,16 @@ type EBookFile struct {
 	Ino         string        `json:"ino,omitempty"`
 	Metadata    *FileMetadata `json:"metadata,omitempty"`
 	EbookFormat string        `json:"ebookFormat,omitempty"`
-	AddedAt     int64         `json:"addedAt,omitempty"`
-	UpdatedAt   int64         `json:"updatedAt,omitempty"`
+	AddedAt     Millis        `json:"addedAt,omitempty"`
+	UpdatedAt   Millis        `json:"updatedAt,omitempty"`
 }
 
 // LibraryFile is a file belonging to a library item.
 type LibraryFile struct {
 	Ino       string        `json:"ino,omitempty"`
 	Metadata  *FileMetadata `json:"metadata,omitempty"`
-	AddedAt   int64         `json:"addedAt,omitempty"`
-	UpdatedAt int64         `json:"updatedAt,omitempty"`
+	AddedAt   Millis        `json:"addedAt,omitempty"`
+	UpdatedAt Millis        `json:"updatedAt,omitempty"`
 	FileType  string        `json:"fileType,omitempty"`
 }
 
@@ -311,9 +313,9 @@ type FileMetadata struct {
 	Path        string `json:"path,omitempty"`
 	RelPath     string `json:"relPath,omitempty"`
 	Size        int64  `json:"size,omitempty"`
-	MtimeMs     int64  `json:"mtimeMs,omitempty"`
-	CtimeMs     int64  `json:"ctimeMs,omitempty"`
-	BirthtimeMs int64  `json:"birthtimeMs,omitempty"`
+	MtimeMs     Millis `json:"mtimeMs,omitempty"`
+	CtimeMs     Millis `json:"ctimeMs,omitempty"`
+	BirthtimeMs Millis `json:"birthtimeMs,omitempty"`
 }
 
 // PodcastEpisode is a downloaded episode of a podcast.
@@ -331,10 +333,10 @@ type PodcastEpisode struct {
 	PubDate       string                   `json:"pubDate,omitempty"`
 	AudioFile     *AudioFile               `json:"audioFile,omitempty"`
 	AudioTrack    *AudioTrack              `json:"audioTrack,omitempty"`
-	PublishedAt   int64                    `json:"publishedAt,omitempty"`
-	AddedAt       int64                    `json:"addedAt,omitempty"`
-	UpdatedAt     int64                    `json:"updatedAt,omitempty"`
-	Duration      float64                  `json:"duration,omitempty"`
+	PublishedAt   Millis                   `json:"publishedAt,omitempty"`
+	AddedAt       Millis                   `json:"addedAt,omitempty"`
+	UpdatedAt     Millis                   `json:"updatedAt,omitempty"`
+	Duration      Seconds                  `json:"duration,omitempty"`
 	Size          int64                    `json:"size,omitempty"`
 }
 
@@ -358,15 +360,15 @@ type PodcastEpisodeDownload struct {
 	LibraryID           string `json:"libraryId,omitempty"`
 	IsFinished          bool   `json:"isFinished,omitempty"`
 	Failed              bool   `json:"failed,omitempty"`
-	StartedAt           int64  `json:"startedAt,omitempty"`
-	CreatedAt           int64  `json:"createdAt,omitempty"`
-	FinishedAt          int64  `json:"finishedAt,omitempty"`
+	StartedAt           Millis `json:"startedAt,omitempty"`
+	CreatedAt           Millis `json:"createdAt,omitempty"`
+	FinishedAt          Millis `json:"finishedAt,omitempty"`
 	PodcastTitle        string `json:"podcastTitle,omitempty"`
 	PodcastExplicit     bool   `json:"podcastExplicit,omitempty"`
 	Season              string `json:"season,omitempty"`
 	Episode             string `json:"episode,omitempty"`
 	EpisodeType         string `json:"episodeType,omitempty"`
-	PublishedAt         int64  `json:"publishedAt,omitempty"`
+	PublishedAt         Millis `json:"publishedAt,omitempty"`
 }
 
 // PodcastFeed is podcast data fetched from an RSS feed.
@@ -407,7 +409,7 @@ type PodcastFeedEpisode struct {
 	// Duration as reported by the RSS feed, e.g. "21:02".
 	Duration    string                   `json:"duration,omitempty"`
 	Explicit    string                   `json:"explicit,omitempty"`
-	PublishedAt int64                    `json:"publishedAt,omitempty"`
+	PublishedAt Millis                   `json:"publishedAt,omitempty"`
 	Enclosure   *PodcastEpisodeEnclosure `json:"enclosure,omitempty"`
 }
 
@@ -420,8 +422,8 @@ type Author struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 	ImagePath   string `json:"imagePath,omitempty"`
-	AddedAt     int64  `json:"addedAt,omitempty"`
-	UpdatedAt   int64  `json:"updatedAt,omitempty"`
+	AddedAt     Millis `json:"addedAt,omitempty"`
+	UpdatedAt   Millis `json:"updatedAt,omitempty"`
 	// Expanded variant only.
 	NumBooks int `json:"numBooks,omitempty"`
 
@@ -446,8 +448,8 @@ type Series struct {
 	ID          string `json:"id"`
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
-	AddedAt     int64  `json:"addedAt,omitempty"`
-	UpdatedAt   int64  `json:"updatedAt,omitempty"`
+	AddedAt     Millis `json:"addedAt,omitempty"`
+	UpdatedAt   Millis `json:"updatedAt,omitempty"`
 
 	// Variant-specific fields.
 	NameIgnorePrefix     string        `json:"nameIgnorePrefix,omitempty"`
@@ -456,7 +458,7 @@ type Series struct {
 	LibraryItemIDs       []string      `json:"libraryItemIds,omitempty"`
 	NumBooks             int           `json:"numBooks,omitempty"`
 	Books                []LibraryItem `json:"books,omitempty"`
-	TotalDuration        float64       `json:"totalDuration,omitempty"`
+	TotalDuration        Seconds       `json:"totalDuration,omitempty"`
 	Sequence             string        `json:"sequence,omitempty"`
 	// SeriesSequenceList is set on collapsed subseries in library item
 	// lists.
@@ -484,8 +486,8 @@ type Collection struct {
 	Name        string        `json:"name,omitempty"`
 	Description string        `json:"description,omitempty"`
 	Books       []LibraryItem `json:"books,omitempty"`
-	LastUpdate  int64         `json:"lastUpdate,omitempty"`
-	CreatedAt   int64         `json:"createdAt,omitempty"`
+	LastUpdate  Millis        `json:"lastUpdate,omitempty"`
+	CreatedAt   Millis        `json:"createdAt,omitempty"`
 
 	// Optional include (see Client.Collection).
 	RSSFeed *RSSFeed `json:"rssFeed,omitempty"`
@@ -502,8 +504,8 @@ type Playlist struct {
 	Description string         `json:"description,omitempty"`
 	CoverPath   string         `json:"coverPath,omitempty"`
 	Items       []PlaylistItem `json:"items,omitempty"`
-	LastUpdate  int64          `json:"lastUpdate,omitempty"`
-	CreatedAt   int64          `json:"createdAt,omitempty"`
+	LastUpdate  Millis         `json:"lastUpdate,omitempty"`
+	CreatedAt   Millis         `json:"createdAt,omitempty"`
 }
 
 // PlaylistItem is an item of a playlist. Only LibraryItemID and EpisodeID
@@ -524,14 +526,14 @@ type MediaProgress struct {
 	ID                        string  `json:"id,omitempty"`
 	LibraryItemID             string  `json:"libraryItemId,omitempty"`
 	EpisodeID                 string  `json:"episodeId,omitempty"`
-	Duration                  float64 `json:"duration,omitempty"`
+	Duration                  Seconds `json:"duration,omitempty"`
 	Progress                  float64 `json:"progress,omitempty"`
-	CurrentTime               float64 `json:"currentTime,omitempty"`
+	CurrentTime               Seconds `json:"currentTime,omitempty"`
 	IsFinished                bool    `json:"isFinished,omitempty"`
 	HideFromContinueListening bool    `json:"hideFromContinueListening,omitempty"`
-	LastUpdate                int64   `json:"lastUpdate,omitempty"`
-	StartedAt                 int64   `json:"startedAt,omitempty"`
-	FinishedAt                int64   `json:"finishedAt,omitempty"`
+	LastUpdate                Millis  `json:"lastUpdate,omitempty"`
+	StartedAt                 Millis  `json:"startedAt,omitempty"`
+	FinishedAt                Millis  `json:"finishedAt,omitempty"`
 
 	// "With media" variant only.
 	Media   *Media          `json:"media,omitempty"`
@@ -560,7 +562,7 @@ type PlaybackSession struct {
 	DisplayTitle  string         `json:"displayTitle,omitempty"`
 	DisplayAuthor string         `json:"displayAuthor,omitempty"`
 	CoverPath     string         `json:"coverPath,omitempty"`
-	Duration      float64        `json:"duration,omitempty"`
+	Duration      Seconds        `json:"duration,omitempty"`
 	// PlayMethod is one of the PlayMethod constants.
 	PlayMethod    int         `json:"playMethod,omitempty"`
 	MediaPlayer   string      `json:"mediaPlayer,omitempty"`
@@ -568,11 +570,11 @@ type PlaybackSession struct {
 	ServerVersion string      `json:"serverVersion,omitempty"`
 	Date          string      `json:"date,omitempty"`
 	DayOfWeek     string      `json:"dayOfWeek,omitempty"`
-	TimeListening float64     `json:"timeListening,omitempty"`
-	StartTime     float64     `json:"startTime,omitempty"`
-	CurrentTime   float64     `json:"currentTime,omitempty"`
-	StartedAt     int64       `json:"startedAt,omitempty"`
-	UpdatedAt     int64       `json:"updatedAt,omitempty"`
+	TimeListening Seconds     `json:"timeListening,omitempty"`
+	StartTime     Seconds     `json:"startTime,omitempty"`
+	CurrentTime   Seconds     `json:"currentTime,omitempty"`
+	StartedAt     Millis      `json:"startedAt,omitempty"`
+	UpdatedAt     Millis      `json:"updatedAt,omitempty"`
 
 	// Expanded variant only.
 	AudioTracks []AudioTrack `json:"audioTracks,omitempty"`
@@ -632,8 +634,8 @@ type User struct {
 	Bookmarks                       []Bookmark       `json:"bookmarks,omitempty"`
 	IsActive                        bool             `json:"isActive,omitempty"`
 	IsLocked                        bool             `json:"isLocked,omitempty"`
-	LastSeen                        int64            `json:"lastSeen,omitempty"`
-	CreatedAt                       int64            `json:"createdAt,omitempty"`
+	LastSeen                        Millis           `json:"lastSeen,omitempty"`
+	CreatedAt                       Millis           `json:"createdAt,omitempty"`
 	Permissions                     *UserPermissions `json:"permissions,omitempty"`
 	LibrariesAccessible             []string         `json:"librariesAccessible,omitempty"`
 	ItemTagsAccessible              []string         `json:"itemTagsAccessible,omitempty"`
@@ -658,8 +660,8 @@ type Bookmark struct {
 	LibraryItemID string `json:"libraryItemId"`
 	Title         string `json:"title,omitempty"`
 	// Time is the position of the bookmark in seconds.
-	Time      int   `json:"time"`
-	CreatedAt int64 `json:"createdAt,omitempty"`
+	Time      int    `json:"time"`
+	CreatedAt Millis `json:"createdAt,omitempty"`
 }
 
 // Backup is a backup of the server.
@@ -672,7 +674,7 @@ type Backup struct {
 	Path                 string `json:"path,omitempty"`
 	Filename             string `json:"filename,omitempty"`
 	FileSize             int64  `json:"fileSize,omitempty"`
-	CreatedAt            int64  `json:"createdAt,omitempty"`
+	CreatedAt            Millis `json:"createdAt,omitempty"`
 	ServerVersion        string `json:"serverVersion,omitempty"`
 }
 
@@ -697,11 +699,11 @@ type Notification struct {
 	BodyTemplate                 string   `json:"bodyTemplate,omitempty"`
 	Enabled                      bool     `json:"enabled,omitempty"`
 	Type                         string   `json:"type,omitempty"`
-	LastFiredAt                  int64    `json:"lastFiredAt,omitempty"`
+	LastFiredAt                  Millis   `json:"lastFiredAt,omitempty"`
 	LastAttemptFailed            bool     `json:"lastAttemptFailed,omitempty"`
 	NumConsecutiveFailedAttempts int      `json:"numConsecutiveFailedAttempts,omitempty"`
 	NumTimesFired                int      `json:"numTimesFired,omitempty"`
-	CreatedAt                    int64    `json:"createdAt,omitempty"`
+	CreatedAt                    Millis   `json:"createdAt,omitempty"`
 }
 
 // NotificationEvent describes an event a notification can fire on.
@@ -760,8 +762,8 @@ type RSSFeed struct {
 	FeedURL       string           `json:"feedUrl,omitempty"`
 	Meta          *RSSFeedMetadata `json:"meta,omitempty"`
 	Episodes      []RSSFeedEpisode `json:"episodes,omitempty"`
-	CreatedAt     int64            `json:"createdAt,omitempty"`
-	UpdatedAt     int64            `json:"updatedAt,omitempty"`
+	CreatedAt     Millis           `json:"createdAt,omitempty"`
+	UpdatedAt     Millis           `json:"updatedAt,omitempty"`
 }
 
 // RSSFeedMetadata is the metadata of an open RSS feed.
@@ -794,7 +796,7 @@ type RSSFeedEpisode struct {
 	Link          string  `json:"link,omitempty"`
 	Author        string  `json:"author,omitempty"`
 	Explicit      bool    `json:"explicit,omitempty"`
-	Duration      float64 `json:"duration,omitempty"`
+	Duration      Seconds `json:"duration,omitempty"`
 	Season        string  `json:"season,omitempty"`
 	Episode       string  `json:"episode,omitempty"`
 	EpisodeType   string  `json:"episodeType,omitempty"`
@@ -807,21 +809,21 @@ type RSSFeedEpisode struct {
 // ListeningStats are listening statistics for a user.
 type ListeningStats struct {
 	// TotalTime is the total listening time in seconds.
-	TotalTime float64 `json:"totalTime"`
+	TotalTime Seconds `json:"totalTime"`
 	// Items maps library item IDs to per-item stats.
 	Items map[string]ItemListeningStats `json:"items,omitempty"`
 	// Days maps days (YYYY-MM-DD) to listening time in seconds.
-	Days map[string]float64 `json:"days,omitempty"`
+	Days map[string]Seconds `json:"days,omitempty"`
 	// DayOfWeek maps weekday names to listening time in seconds.
-	DayOfWeek map[string]float64 `json:"dayOfWeek,omitempty"`
+	DayOfWeek map[string]Seconds `json:"dayOfWeek,omitempty"`
 	// Today is the listening time today in seconds.
-	Today          float64           `json:"today"`
+	Today          Seconds           `json:"today"`
 	RecentSessions []PlaybackSession `json:"recentSessions,omitempty"`
 }
 
 // ItemListeningStats are listening statistics for one library item.
 type ItemListeningStats struct {
 	ID            string         `json:"id"`
-	TimeListening float64        `json:"timeListening"`
+	TimeListening Seconds        `json:"timeListening"`
 	MediaMetadata *MediaMetadata `json:"mediaMetadata,omitempty"`
 }

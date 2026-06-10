@@ -8,11 +8,11 @@ import (
 // and CloseOpenSession.
 type SessionSync struct {
 	// CurrentTime is the playback position in seconds.
-	CurrentTime float64 `json:"currentTime"`
+	CurrentTime Seconds `json:"currentTime"`
 	// TimeListened is the seconds listened since the last sync.
-	TimeListened float64 `json:"timeListened"`
+	TimeListened Seconds `json:"timeListened"`
 	// Duration is the total duration of the playing item in seconds.
-	Duration float64 `json:"duration"`
+	Duration Seconds `json:"duration"`
 }
 
 // SessionSyncResult is the per-session result of SyncLocalSessions.
