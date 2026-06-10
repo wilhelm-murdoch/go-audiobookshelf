@@ -37,6 +37,12 @@ const (
 	Version          = "0.1.0"
 	DefaultUserAgent = "go-audiobookshelf/" + Version
 
+	// TestedServerVersion is the Audiobookshelf release this version of
+	// the client is verified against in CI. Other server versions usually
+	// work; a mismatch is the first thing to check when a response fails
+	// to decode.
+	TestedServerVersion = "2.35.1"
+
 	errorPrefix = "audiobookshelf"
 )
 

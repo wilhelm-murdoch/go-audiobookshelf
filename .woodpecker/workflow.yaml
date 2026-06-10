@@ -6,9 +6,9 @@ when:
 # so no persistent volumes are needed.
 services:
   - name: audiobookshelf
-    # TODO: pin to a specific released tag once verified against CI;
-    # see the tags at ghcr.io/advplyr/audiobookshelf.
-    image: ghcr.io/advplyr/audiobookshelf:latest
+    # Pinned to the version this release is tested against; keep in sync
+    # with TestedServerVersion in client.go and the README matrix.
+    image: ghcr.io/advplyr/audiobookshelf:2.35.1
     # Woodpecker sets every container's working directory to the cloned
     # repo workspace, so Audiobookshelf's relative `node index.js` must be
     # started from its own app dir. Woodpecker also force-stops services

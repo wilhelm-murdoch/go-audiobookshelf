@@ -6,6 +6,14 @@ A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobooks
 go get git.nightcity.network/nightcity-network/go-audiobookshelf
 ```
 
+## Compatibility
+
+This client is versioned on its own [SemVer](https://semver.org/) — the version reflects changes to the Go API, not the server. Each release is verified in CI against a specific Audiobookshelf version (`TestedServerVersion`); other server versions usually work, and a mismatch is the first thing to check when a response fails to decode.
+
+| go-audiobookshelf | Tested against Audiobookshelf |
+| ----------------- | ----------------------------- |
+| v0.1.x            | 2.35.1                        |
+
 ## Quick start
 
 ```go
