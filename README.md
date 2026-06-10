@@ -1,6 +1,14 @@
 # go-audiobookshelf
 
-A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobookshelf.org/) API, covering the full API surface documented at [api.audiobookshelf.org](https://api.audiobookshelf.org/). 
+A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobookshelf.org/) API, covering the full API surface documented at [api.audiobookshelf.org](https://api.audiobookshelf.org/).
+
+- **Complete coverage** — every endpoint group in the official docs, plus generic `Get`/`Post`/… escape hatches for anything not yet modeled.
+- **Chainable resource handles** — `client.Library(...).Items(...)`, or call everything directly by ID.
+- **Honest types** — millisecond timestamps and second durations come with `time.Time` / `time.Duration` helpers.
+- **Context first** — every method takes a `context.Context`, so cancellation and timeouts just work.
+- **Verified against a live server** — integration tests run against a real Audiobookshelf container in CI.
+
+> **Status:** `v0.x`. The API is still settling and minor releases may introduce breaking changes, so pin a version. It requires **Go 1.26+**.
 
 ```sh
 go get github.com/wilhelm-murdoch/go-audiobookshelf
