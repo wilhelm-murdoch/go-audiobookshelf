@@ -62,25 +62,39 @@ func (c *Client) DownloadBackupTo(ctx context.Context, id, dest string) (string,
 	if err != nil {
 		return "", err
 	}
-	defer body.Close()
+
+	defer func() { _ = body.Close() }()
 
 	path := dest
 	if info, err := os.Stat(dest); err == nil && info.IsDir() {
 		path = filepath.Join(dest, id+".audiobookshelf")
 	}
+
 	file, err := os.Create(path)
 	if err != nil {
 		return "", fmt.Errorf("audiobookshelf: creating backup file: %w", err)
 	}
+
 	if _, err := io.Copy(file, body); err != nil {
-		file.Close()
-		os.Remove(path)
+		if err := file.Close(); err != nil {
+			return "", fmt.Errorf("audiobookshelf: closing file: %w", err)
+		}
+
+		if err := os.Remove(path); err != nil {
+			return "", fmt.Errorf("audiobookshelf: removing file: %w", err)
+		}
+
 		return "", fmt.Errorf("audiobookshelf: writing backup file: %w", err)
 	}
+
 	if err := file.Close(); err != nil {
-		os.Remove(path)
+		if err := os.Remove(path); err != nil {
+			return "", fmt.Errorf("audiobookshelf: removing file: %w", err)
+		}
+
 		return "", fmt.Errorf("audiobookshelf: writing backup file: %w", err)
 	}
+
 	return path, nil
 }
 

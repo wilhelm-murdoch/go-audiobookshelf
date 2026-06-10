@@ -78,9 +78,11 @@ func WithInsecureSkipVerify() Option {
 		if !ok || transport == nil {
 			transport = http.DefaultTransport.(*http.Transport).Clone()
 		}
+
 		if transport.TLSClientConfig == nil {
 			transport.TLSClientConfig = &tls.Config{}
 		}
+
 		transport.TLSClientConfig.InsecureSkipVerify = true
 		c.httpClient.Transport = transport
 	}
@@ -98,6 +100,7 @@ func NewClient(baseURL string, opts ...Option) *Client {
 		opt(c)
 
 	}
+
 	return c
 }
 
@@ -169,16 +172,18 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		return err
 
 	}
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 
 	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("audiobookshelf: %s %s: %w", method, path, err)
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if err := checkResponse(resp, method, path); err != nil {
 		return err
@@ -193,8 +198,10 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 		if errors.Is(err, io.EOF) {
 			return nil // success with an empty body
 		}
+
 		return fmt.Errorf("audiobookshelf: decoding %s %s response: %w", method, path, err)
 	}
+
 	return nil
 }
 
@@ -215,7 +222,10 @@ func (c *Client) getBinary(ctx context.Context, path string) (io.ReadCloser, str
 	}
 
 	if err := checkResponse(resp, http.MethodGet, path); err != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			return nil, "", err
+		}
+
 		return nil, "", err
 	}
 
@@ -234,6 +244,7 @@ type multipartFile struct {
 func (c *Client) postMultipart(ctx context.Context, path string, fields map[string]string, files []multipartFile, out any) error {
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
+
 	go func() {
 		err := func() error {
 			for key, value := range fields {
@@ -247,6 +258,7 @@ func (c *Client) postMultipart(ctx context.Context, path string, fields map[stri
 				if err != nil {
 					return err
 				}
+
 				if _, err := io.Copy(part, f.reader); err != nil {
 					return err
 				}
@@ -261,8 +273,8 @@ func (c *Client) postMultipart(ctx context.Context, path string, fields map[stri
 	req, err := c.newRequest(ctx, http.MethodPost, path, pr)
 	if err != nil {
 		return err
-
 	}
+
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 
 	resp, err := c.httpClient.Do(req)
@@ -270,7 +282,7 @@ func (c *Client) postMultipart(ctx context.Context, path string, fields map[stri
 		return fmt.Errorf("audiobookshelf: POST %s: %w", path, err)
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if err := checkResponse(resp, http.MethodPost, path); err != nil {
 		return err
@@ -285,6 +297,7 @@ func (c *Client) postMultipart(ctx context.Context, path string, fields map[stri
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
+
 		return fmt.Errorf("audiobookshelf: decoding POST %s response: %w", path, err)
 	}
 

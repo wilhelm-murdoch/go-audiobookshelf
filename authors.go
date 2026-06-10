@@ -9,7 +9,7 @@ import (
 
 // AuthorParams are the optional query parameters for Client.Author.
 type AuthorParams struct {
-	Include []string
+	Include   []string
 	LibraryID string
 }
 

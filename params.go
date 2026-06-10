@@ -13,15 +13,6 @@ func appendQuery(path string, q url.Values) string {
 	return path + "?" + q.Encode()
 }
 
-// binary renders a bool the way the API expects binary query parameters:
-// "1" for true, "0" for false.
-func binary(b bool) string {
-	if b {
-		return "1"
-	}
-	return "0"
-}
-
 // PageParams are the limit/page parameters used by paginated list
 // endpoints. Pages are 0-indexed. A zero Limit applies no limit.
 type PageParams struct {

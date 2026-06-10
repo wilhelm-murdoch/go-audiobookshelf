@@ -14,7 +14,10 @@ func TestDownloadBackupTo(t *testing.T) {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Write([]byte("backup-bytes"))
+
+		if _, err := w.Write([]byte("backup-bytes")); err != nil {
+			t.Errorf("writing file: %v", err)
+		}
 	})
 
 	ctx := context.Background()
