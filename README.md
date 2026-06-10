@@ -3,7 +3,7 @@
 A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobookshelf.org/) API, covering the full API surface documented at [api.audiobookshelf.org](https://api.audiobookshelf.org/). 
 
 ```sh
-go get git.nightcity.network/nightcity-network/go-audiobookshelf
+go get github.com/wilhelm-murdoch/go-audiobookshelf
 ```
 
 ## Compatibility
@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"log"
 
-	audiobookshelf "git.nightcity.network/nightcity-network/go-audiobookshelf"
+	audiobookshelf "github.com/wilhelm-murdoch/go-audiobookshelf"
 )
 
 func main() {
