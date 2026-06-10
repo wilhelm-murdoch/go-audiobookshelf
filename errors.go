@@ -10,14 +10,10 @@ import (
 
 // Error is returned for any response with a 4xx or 5xx status code.
 type Error struct {
-	// Method and Path identify the request that failed.
-	Method string
-	Path   string
-	// StatusCode is the HTTP status code of the response.
+	Method     string
+	Path       string
 	StatusCode int
-	// Message is the (truncated) response body, which Audiobookshelf uses
-	// for plain-text error messages.
-	Message string
+	Message    string
 }
 
 func (e *Error) Error() string {
@@ -25,6 +21,7 @@ func (e *Error) Error() string {
 	if msg == "" {
 		msg = http.StatusText(e.StatusCode)
 	}
+
 	return fmt.Sprintf("audiobookshelf: %s %s: %d %s", e.Method, e.Path, e.StatusCode, msg)
 }
 
@@ -35,6 +32,7 @@ func checkResponse(resp *http.Response, method, path string) error {
 	if resp.StatusCode < 400 {
 		return nil
 	}
+
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, errorBodyLimit))
 	return &Error{
 		Method:     method,

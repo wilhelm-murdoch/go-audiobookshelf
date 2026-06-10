@@ -3,9 +3,11 @@ package audiobookshelf
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // UploadFile is one file of an UploadFilesRequest.
@@ -173,4 +175,22 @@ func (c *Client) DeleteGenre(ctx context.Context, genre string) (int, error) {
 // nil error means the expression is valid.
 func (c *Client) ValidateCron(ctx context.Context, expression string) error {
 	return c.Post(ctx, "/api/validate-cron", map[string]string{"expression": expression}, nil)
+}
+
+func basePathBuilder(base, id string, parts ...string) (string, error) {
+	var sb strings.Builder
+
+	_, err := sb.WriteString(base + url.PathEscape(id))
+	if err != nil {
+		return "", fmt.Errorf("audiobookshelf: building path: %w", err)
+	}
+
+	for _, r := range parts {
+		_, err := sb.WriteString("/" + r)
+		if err != nil {
+			return "", fmt.Errorf("audiobookshelf: building path: %w", err)
+		}
+	}
+
+	return sb.String(), nil
 }

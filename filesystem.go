@@ -17,8 +17,10 @@ func (c *Client) Filesystem(ctx context.Context) ([]FilesystemDirectory, error) 
 	var resp struct {
 		Directories []FilesystemDirectory `json:"directories"`
 	}
+
 	if err := c.Get(ctx, "/api/filesystem", &resp); err != nil {
 		return nil, err
 	}
+
 	return resp.Directories, nil
 }

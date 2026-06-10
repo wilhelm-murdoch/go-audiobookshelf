@@ -7,20 +7,19 @@ import (
 
 // OpenRSSFeedRequest are the parameters for the open-RSS-feed endpoints.
 type OpenRSSFeedRequest struct {
-	// ServerAddress is the URL address of the server, used to build the
-	// feed URL.
 	ServerAddress string `json:"serverAddress"`
-	// Slug is the last part of the feed URL.
-	Slug string `json:"slug"`
+	Slug          string `json:"slug"`
 }
 
 func (c *Client) openFeed(ctx context.Context, path string, req *OpenRSSFeedRequest) (*RSSFeed, error) {
 	var resp struct {
 		Feed *RSSFeed `json:"feed"`
 	}
+
 	if err := c.Post(ctx, path, req, &resp); err != nil {
 		return nil, err
 	}
+
 	return resp.Feed, nil
 }
 

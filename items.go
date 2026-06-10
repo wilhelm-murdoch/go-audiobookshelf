@@ -10,15 +10,9 @@ import (
 
 // LibraryItemParams are the optional query parameters for LibraryItem.
 type LibraryItemParams struct {
-	// Expanded requests the expanded variant of the item. Required for
-	// Include to have an effect.
 	Expanded bool
-	// Include lists extras to include: "progress", "rssfeed", "authors"
-	// (books), "downloads" (podcasts).
-	Include []string
-	// Episode is the episode ID to fetch progress for when including
-	// "progress" on a podcast.
-	Episode string
+	Include  []string
+	Episode  string
 }
 
 func (p *LibraryItemParams) values() url.Values {
@@ -26,15 +20,19 @@ func (p *LibraryItemParams) values() url.Values {
 	if p == nil {
 		return q
 	}
+
 	if p.Expanded {
 		q.Set("expanded", "1")
 	}
+
 	if len(p.Include) > 0 {
 		q.Set("include", strings.Join(p.Include, ","))
 	}
+
 	if p.Episode != "" {
 		q.Set("episode", p.Episode)
 	}
+
 	return q
 }
 
@@ -42,22 +40,15 @@ func (p *LibraryItemParams) values() url.Values {
 // BatchUpdateLibraryItems. It is a superset of the book and podcast
 // media parameters; only set fields are sent.
 type MediaUpdate struct {
-	// Metadata holds the metadata fields to change, using the API's JSON
-	// keys (e.g. "title", "authors", "feedUrl"). A map is used so partial
-	// updates only touch the given keys.
-	Metadata  map[string]any `json:"metadata,omitempty"`
-	CoverPath *string        `json:"coverPath,omitempty"`
-	Tags      []string       `json:"tags,omitempty"`
-
-	// Book fields.
-	Chapters []Chapter `json:"chapters,omitempty"`
-
-	// Podcast fields.
-	AutoDownloadEpisodes     *bool   `json:"autoDownloadEpisodes,omitempty"`
-	AutoDownloadSchedule     *string `json:"autoDownloadSchedule,omitempty"`
-	LastEpisodeCheck         *int64  `json:"lastEpisodeCheck,omitempty"`
-	MaxEpisodesToKeep        *int    `json:"maxEpisodesToKeep,omitempty"`
-	MaxNewEpisodesToDownload *int    `json:"maxNewEpisodesToDownload,omitempty"`
+	Metadata                 map[string]any `json:"metadata,omitempty"`
+	CoverPath                *string        `json:"coverPath,omitempty"`
+	Tags                     []string       `json:"tags,omitempty"`
+	Chapters                 []Chapter      `json:"chapters,omitempty"`
+	AutoDownloadEpisodes     *bool          `json:"autoDownloadEpisodes,omitempty"`
+	AutoDownloadSchedule     *string        `json:"autoDownloadSchedule,omitempty"`
+	LastEpisodeCheck         *int64         `json:"lastEpisodeCheck,omitempty"`
+	MaxEpisodesToKeep        *int           `json:"maxEpisodesToKeep,omitempty"`
+	MaxNewEpisodesToDownload *int           `json:"maxNewEpisodesToDownload,omitempty"`
 }
 
 // UpdateMediaResult is the response of UpdateLibraryItemMedia.
@@ -69,14 +60,12 @@ type UpdateMediaResult struct {
 // MatchLibraryItemRequest are the parameters for MatchLibraryItem. Empty
 // fields fall back to the library item's own details.
 type MatchLibraryItemRequest struct {
-	Provider string `json:"provider,omitempty"`
-	Title    string `json:"title,omitempty"`
-	Author   string `json:"author,omitempty"`
-	ISBN     string `json:"isbn,omitempty"`
-	ASIN     string `json:"asin,omitempty"`
-	// OverrideDefaults overrides existing details and cover instead of
-	// only filling in missing ones.
-	OverrideDefaults bool `json:"overrideDefaults,omitempty"`
+	Provider         string `json:"provider,omitempty"`
+	Title            string `json:"title,omitempty"`
+	Author           string `json:"author,omitempty"`
+	ISBN             string `json:"isbn,omitempty"`
+	ASIN             string `json:"asin,omitempty"`
+	OverrideDefaults bool   `json:"overrideDefaults,omitempty"`
 }
 
 // MatchResult is the response of MatchLibraryItem.
@@ -98,12 +87,8 @@ type PlayRequest struct {
 // TrackOrder identifies one audio file for UpdateLibraryItemTracks. The
 // order of the slice becomes the new track order.
 type TrackOrder struct {
-	// Ino is the inode of the audio file (AudioFile.Ino); it is how the
-	// server matches the entry to a file.
-	Ino string `json:"ino"`
-	// Exclude removes the audio file from playback (its index becomes
-	// -1).
-	Exclude bool `json:"exclude,omitempty"`
+	Ino     string `json:"ino"`
+	Exclude bool   `json:"exclude,omitempty"`
 }
 
 // BatchUpdateItem is one update of BatchUpdateLibraryItems.
@@ -118,12 +103,8 @@ type QuickMatchOptions struct {
 	OverrideDefaults bool   `json:"overrideDefaults,omitempty"`
 }
 
-func itemPath(id string, rest ...string) string {
-	path := "/api/items/" + url.PathEscape(id)
-	for _, r := range rest {
-		path += "/" + r
-	}
-	return path
+func itemPath(id string, rest ...string) (string, error) {
+	return basePathBuilder("/api/items/", id, rest...)
 }
 
 // DeleteAllLibraryItems deletes ALL library items from the database
@@ -134,11 +115,18 @@ func (c *Client) DeleteAllLibraryItems(ctx context.Context) error {
 
 // LibraryItem returns a library item (GET /api/items/:id).
 func (c *Client) LibraryItem(ctx context.Context, id string, params *LibraryItemParams) (*LibraryItem, error) {
-	var item LibraryItem
-	if err := c.Get(ctx, appendQuery(itemPath(id), params.values()), &item); err != nil {
+	path, err := itemPath(id)
+	if err != nil {
 		return nil, err
 	}
+
+	var item LibraryItem
+	if err := c.Get(ctx, appendQuery(path, params.values()), &item); err != nil {
+		return nil, err
+	}
+
 	item.client = c
+
 	return &item, nil
 }
 
@@ -150,19 +138,32 @@ func (c *Client) DeleteLibraryItem(ctx context.Context, id string, hard bool) er
 	if hard {
 		q.Set("hard", "1")
 	}
-	return c.Delete(ctx, appendQuery(itemPath(id), q), nil)
+
+	path, err := itemPath(id)
+	if err != nil {
+		return err
+	}
+
+	return c.Delete(ctx, appendQuery(path, q), nil)
 }
 
 // UpdateLibraryItemMedia updates a library item's media
 // (PATCH /api/items/:id/media).
 func (c *Client) UpdateLibraryItemMedia(ctx context.Context, id string, update *MediaUpdate) (*UpdateMediaResult, error) {
-	var result UpdateMediaResult
-	if err := c.Patch(ctx, itemPath(id, "media"), update, &result); err != nil {
+	path, err := itemPath(id, "media")
+	if err != nil {
 		return nil, err
 	}
+
+	var result UpdateMediaResult
+	if err := c.Patch(ctx, path, update, &result); err != nil {
+		return nil, err
+	}
+
 	if result.LibraryItem != nil {
 		result.LibraryItem.client = c
 	}
+
 	return &result, nil
 }
 
@@ -170,44 +171,77 @@ func (c *Client) UpdateLibraryItemMedia(ctx context.Context, id string, update *
 // (GET /api/items/:id/cover). The caller must close the reader. The
 // string result is the image's Content-Type.
 func (c *Client) LibraryItemCover(ctx context.Context, id string, params *ImageParams) (io.ReadCloser, string, error) {
-	return c.getBinary(ctx, appendQuery(itemPath(id, "cover"), params.values()))
+	path, err := itemPath(id, "cover")
+	if err != nil {
+		return nil, "", err
+	}
+
+	return c.getBinary(ctx, appendQuery(path, params.values()))
 }
 
 // UploadLibraryItemCover uploads a cover image for a library item
 // (POST /api/items/:id/cover).
 func (c *Client) UploadLibraryItemCover(ctx context.Context, id, filename string, cover io.Reader) error {
 	files := []multipartFile{{field: "cover", filename: filename, reader: cover}}
-	return c.postMultipart(ctx, itemPath(id, "cover"), nil, files, nil)
+
+	path, err := itemPath(id, "cover")
+	if err != nil {
+		return err
+	}
+
+	return c.postMultipart(ctx, path, nil, files, nil)
 }
 
 // SetLibraryItemCoverFromURL has the server download a cover image for a
 // library item (POST /api/items/:id/cover with a url payload).
 func (c *Client) SetLibraryItemCoverFromURL(ctx context.Context, id, coverURL string) error {
-	return c.Post(ctx, itemPath(id, "cover"), map[string]string{"url": coverURL}, nil)
+	path, err := itemPath(id, "cover")
+	if err != nil {
+		return err
+	}
+
+	return c.Post(ctx, path, map[string]string{"url": coverURL}, nil)
 }
 
 // UpdateLibraryItemCover points a library item's cover at an image file
 // already on the server (PATCH /api/items/:id/cover).
 func (c *Client) UpdateLibraryItemCover(ctx context.Context, id, coverPath string) error {
-	return c.Patch(ctx, itemPath(id, "cover"), map[string]string{"cover": coverPath}, nil)
+	path, err := itemPath(id, "cover")
+	if err != nil {
+		return err
+	}
+
+	return c.Patch(ctx, path, map[string]string{"cover": coverPath}, nil)
 }
 
 // RemoveLibraryItemCover removes a library item's cover
 // (DELETE /api/items/:id/cover).
 func (c *Client) RemoveLibraryItemCover(ctx context.Context, id string) error {
-	return c.Delete(ctx, itemPath(id, "cover"), nil)
+	path, err := itemPath(id, "cover")
+	if err != nil {
+		return err
+	}
+
+	return c.Delete(ctx, path, nil)
 }
 
 // MatchLibraryItem matches a library item against a metadata provider and
 // updates its details (POST /api/items/:id/match).
 func (c *Client) MatchLibraryItem(ctx context.Context, id string, req *MatchLibraryItemRequest) (*MatchResult, error) {
-	var result MatchResult
-	if err := c.Post(ctx, itemPath(id, "match"), req, &result); err != nil {
+	path, err := itemPath(id, "match")
+	if err != nil {
 		return nil, err
 	}
+
+	var result MatchResult
+	if err := c.Post(ctx, path, req, &result); err != nil {
+		return nil, err
+	}
+
 	if result.LibraryItem != nil {
 		result.LibraryItem.client = c
 	}
+
 	return &result, nil
 }
 
@@ -217,8 +251,14 @@ func (c *Client) PlayLibraryItem(ctx context.Context, id string, req *PlayReques
 	if req == nil {
 		req = &PlayRequest{}
 	}
+
+	path, err := itemPath(id, "play")
+	if err != nil {
+		return nil, err
+	}
+
 	var session PlaybackSession
-	if err := c.Post(ctx, itemPath(id, "play"), req, &session); err != nil {
+	if err := c.Post(ctx, path, req, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -230,10 +270,17 @@ func (c *Client) PlayPodcastEpisode(ctx context.Context, id, episodeID string, r
 	if req == nil {
 		req = &PlayRequest{}
 	}
-	var session PlaybackSession
-	if err := c.Post(ctx, itemPath(id, "play", url.PathEscape(episodeID)), req, &session); err != nil {
+
+	path, err := itemPath(id, "play", url.PathEscape(episodeID))
+	if err != nil {
 		return nil, err
 	}
+
+	var session PlaybackSession
+	if err := c.Post(ctx, path, req, &session); err != nil {
+		return nil, err
+	}
+
 	return &session, nil
 }
 
@@ -241,11 +288,19 @@ func (c *Client) PlayPodcastEpisode(ctx context.Context, id, episodeID string, r
 // (PATCH /api/items/:id/tracks) and returns the updated library item.
 func (c *Client) UpdateLibraryItemTracks(ctx context.Context, id string, order []TrackOrder) (*LibraryItem, error) {
 	body := map[string]any{"orderedFileData": order}
-	var item LibraryItem
-	if err := c.Patch(ctx, itemPath(id, "tracks"), body, &item); err != nil {
+
+	path, err := itemPath(id, "tracks")
+	if err != nil {
 		return nil, err
 	}
+
+	var item LibraryItem
+	if err := c.Patch(ctx, path, body, &item); err != nil {
+		return nil, err
+	}
+
 	item.client = c
+
 	return &item, nil
 }
 
@@ -256,19 +311,32 @@ func (c *Client) ScanLibraryItem(ctx context.Context, id string) (string, error)
 	var resp struct {
 		Result string `json:"result"`
 	}
-	if err := c.Post(ctx, itemPath(id, "scan"), nil, &resp); err != nil {
+
+	path, err := itemPath(id, "scan")
+	if err != nil {
 		return "", err
 	}
+
+	if err := c.Post(ctx, path, nil, &resp); err != nil {
+		return "", err
+	}
+
 	return resp.Result, nil
 }
 
 // LibraryItemToneObject returns the tone metadata object of a library
 // item (GET /api/items/:id/tone-object). Requires admin.
 func (c *Client) LibraryItemToneObject(ctx context.Context, id string) (map[string]any, error) {
-	var tone map[string]any
-	if err := c.Get(ctx, itemPath(id, "tone-object"), &tone); err != nil {
+	path, err := itemPath(id, "tone-object")
+	if err != nil {
 		return nil, err
 	}
+
+	var tone map[string]any
+	if err := c.Get(ctx, path, &tone); err != nil {
+		return nil, err
+	}
+
 	return tone, nil
 }
 
@@ -277,13 +345,21 @@ func (c *Client) LibraryItemToneObject(ctx context.Context, id string) (map[stri
 // actually changed.
 func (c *Client) UpdateLibraryItemChapters(ctx context.Context, id string, chapters []Chapter) (bool, error) {
 	body := map[string]any{"chapters": chapters}
+
 	var resp struct {
 		Success bool `json:"success"`
 		Updated bool `json:"updated"`
 	}
-	if err := c.Post(ctx, itemPath(id, "chapters"), body, &resp); err != nil {
+
+	path, err := itemPath(id, "chapters")
+	if err != nil {
 		return false, err
 	}
+
+	if err := c.Post(ctx, path, body, &resp); err != nil {
+		return false, err
+	}
+
 	return resp.Updated, nil
 }
 
@@ -291,14 +367,20 @@ func (c *Client) UpdateLibraryItemChapters(ctx context.Context, id string, chapt
 // (POST /api/items/:id/tone-scan/:index). index selects the audio file
 // (1-based); pass 0 for the first file. Requires admin.
 func (c *Client) ToneScanLibraryItem(ctx context.Context, id string, index int) (map[string]any, error) {
-	path := itemPath(id, "tone-scan")
+	path, err := itemPath(id, "tone-scan")
+	if err != nil {
+		return nil, err
+	}
+
 	if index > 0 {
 		path += "/" + strconv.Itoa(index)
 	}
+
 	var result map[string]any
 	if err := c.Post(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
+
 	return result, nil
 }
 
@@ -316,9 +398,11 @@ func (c *Client) BatchUpdateLibraryItems(ctx context.Context, updates []BatchUpd
 		Success bool `json:"success"`
 		Updates int  `json:"updates"`
 	}
+
 	if err := c.Post(ctx, "/api/items/batch/update", updates, &resp); err != nil {
 		return 0, err
 	}
+
 	return resp.Updates, nil
 }
 
@@ -328,10 +412,13 @@ func (c *Client) BatchGetLibraryItems(ctx context.Context, ids []string) ([]Libr
 	var resp struct {
 		LibraryItems []LibraryItem `json:"libraryItems"`
 	}
+
 	if err := c.Post(ctx, "/api/items/batch/get", map[string]any{"libraryItemIds": ids}, &resp); err != nil {
 		return nil, err
 	}
+
 	c.setItemClients(resp.LibraryItems)
+
 	return resp.LibraryItems, nil
 }
 
@@ -342,6 +429,7 @@ func (c *Client) BatchQuickMatchLibraryItems(ctx context.Context, ids []string, 
 	if opts != nil {
 		body["options"] = opts
 	}
+
 	return c.Post(ctx, "/api/items/batch/quickmatch", body, nil)
 }
 

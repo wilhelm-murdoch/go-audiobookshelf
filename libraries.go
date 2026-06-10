@@ -9,11 +9,10 @@ import (
 
 // CreateLibraryRequest are the parameters for CreateLibrary.
 type CreateLibraryRequest struct {
-	Name    string   `json:"name"`
-	Folders []Folder `json:"folders,omitempty"`
-	Icon    string   `json:"icon,omitempty"`
-	// MediaType is "book" (default) or "podcast".
-	MediaType string           `json:"mediaType,omitempty"`
+	Name      string           `json:"name"`
+	Folders   []Folder         `json:"folders,omitempty"`
+	Icon      string           `json:"icon,omitempty"`
+	MediaType string           `json:"mediaType,omitempty"` // MediaType is "book" (default) or "podcast".
 	Provider  string           `json:"provider,omitempty"`
 	Settings  *LibrarySettings `json:"settings,omitempty"`
 }
@@ -32,24 +31,14 @@ type UpdateLibraryRequest struct {
 // LibraryItemListParams are the optional query parameters for
 // LibraryItems.
 type LibraryItemListParams struct {
-	// Limit per page; 0 means no limit. Page is 0-indexed.
-	Limit int
-	Page  int
-	// Sort is the attribute to sort by in JavaScript object notation,
-	// e.g. "media.metadata.title".
-	Sort string
-	// Desc reverses the sort order.
-	Desc bool
-	// Filter filters the results, e.g. "authors.<base64 author id>". See
-	// the Filtering section of the API documentation.
-	Filter string
-	// Minified requests minified library items.
-	Minified bool
-	// CollapseSeries collapses books of a series into a single entry.
-	CollapseSeries bool
-	// Include is a comma-separated list of extras; the only current
-	// option is "rssfeed".
-	Include string
+	Limit          int // Limit per page; 0 means no limit. Page is 0-indexed.
+	Page           int
+	Sort           string // Sort is the attribute to sort by in JavaScript object notation
+	Desc           bool   // Desc reverses the sort order.
+	Filter         string // Filter filters the results, e.g. "authors.<base64 author id>".
+	Minified       bool   // Minified requests minified library items.
+	CollapseSeries bool   // CollapseSeries collapses books of a series into a single entry.
+	Include        string // Include is a comma-separated list of extras; the only current option is "rssfeed".
 }
 
 func (p *LibraryItemListParams) values() url.Values {
@@ -57,44 +46,52 @@ func (p *LibraryItemListParams) values() url.Values {
 	if p == nil {
 		return q
 	}
+
 	if p.Limit > 0 {
 		q.Set("limit", strconv.Itoa(p.Limit))
 	}
+
 	if p.Page > 0 {
 		q.Set("page", strconv.Itoa(p.Page))
 	}
+
 	if p.Sort != "" {
 		q.Set("sort", p.Sort)
 	}
+
 	if p.Desc {
 		q.Set("desc", "1")
 	}
+
 	if p.Filter != "" {
 		q.Set("filter", p.Filter)
 	}
+
 	if p.Minified {
 		q.Set("minified", "1")
 	}
+
 	if p.CollapseSeries {
 		q.Set("collapseseries", "1")
 	}
+
 	if p.Include != "" {
 		q.Set("include", p.Include)
 	}
+
 	return q
 }
 
 // Shelf is one shelf of a library's personalized view. Entities is left
 // raw because its element type depends on Type; use the typed accessors.
 type Shelf struct {
-	ID             string `json:"id"`
-	Label          string `json:"label"`
-	LabelStringKey string `json:"labelStringKey,omitempty"`
-	// Type is "book", "podcast", "episode", "series", or "authors".
-	Type     string          `json:"type"`
-	Category string          `json:"category,omitempty"`
-	Entities json.RawMessage `json:"entities"`
-	Total    int             `json:"total,omitempty"`
+	ID             string          `json:"id"`
+	Label          string          `json:"label"`
+	LabelStringKey string          `json:"labelStringKey,omitempty"`
+	Type           string          `json:"type"` // Type is "book", "podcast", "episode", "series", or "authors".
+	Category       string          `json:"category,omitempty"`
+	Entities       json.RawMessage `json:"entities"`
+	Total          int             `json:"total,omitempty"`
 }
 
 // LibraryItemEntities decodes the shelf's entities as library items
@@ -146,19 +143,21 @@ type SeriesSearchResult struct {
 
 // LibraryStats are the statistics of a library.
 type LibraryStats struct {
-	TotalItems       int                `json:"totalItems"`
-	TotalAuthors     int                `json:"totalAuthors"`
-	TotalGenres      int                `json:"totalGenres"`
-	TotalDuration    float64            `json:"totalDuration"`
-	NumAudioTracks   int                `json:"numAudioTracks"`
-	TotalSize        int64              `json:"totalSize"`
-	LongestItems     []LibraryStatsItem `json:"longestItems,omitempty"`
-	LargestItems     []LibraryStatsItem `json:"largestItems,omitempty"`
+	TotalItems     int                `json:"totalItems"`
+	TotalAuthors   int                `json:"totalAuthors"`
+	TotalGenres    int                `json:"totalGenres"`
+	TotalDuration  float64            `json:"totalDuration"`
+	NumAudioTracks int                `json:"numAudioTracks"`
+	TotalSize      int64              `json:"totalSize"`
+	LongestItems   []LibraryStatsItem `json:"longestItems,omitempty"`
+	LargestItems   []LibraryStatsItem `json:"largestItems,omitempty"`
+
 	AuthorsWithCount []struct {
 		ID    string `json:"id"`
 		Name  string `json:"name"`
 		Count int    `json:"count"`
 	} `json:"authorsWithCount,omitempty"`
+
 	GenresWithCount []struct {
 		Genre string `json:"genre"`
 		Count int    `json:"count"`
@@ -205,7 +204,9 @@ func (c *Client) CreateLibrary(ctx context.Context, req *CreateLibraryRequest) (
 	if err := c.Post(ctx, "/api/libraries", req, &library); err != nil {
 		return nil, err
 	}
+
 	library.client = c
+
 	return &library, nil
 }
 
@@ -215,10 +216,13 @@ func (c *Client) Libraries(ctx context.Context) ([]Library, error) {
 	var resp struct {
 		Libraries []Library `json:"libraries"`
 	}
+
 	if err := c.Get(ctx, "/api/libraries", &resp); err != nil {
 		return nil, err
 	}
+
 	c.setLibraryClients(resp.Libraries)
+
 	return resp.Libraries, nil
 }
 
@@ -228,7 +232,9 @@ func (c *Client) Library(ctx context.Context, id string) (*Library, error) {
 	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(id), &library); err != nil {
 		return nil, err
 	}
+
 	library.client = c
+
 	return &library, nil
 }
 
@@ -239,7 +245,9 @@ func (c *Client) UpdateLibrary(ctx context.Context, id string, req *UpdateLibrar
 	if err := c.Patch(ctx, "/api/libraries/"+url.PathEscape(id), req, &library); err != nil {
 		return nil, err
 	}
+
 	library.client = c
+
 	return &library, nil
 }
 
@@ -253,11 +261,14 @@ func (c *Client) DeleteLibrary(ctx context.Context, id string) error {
 // (GET /api/libraries/:id/items).
 func (c *Client) LibraryItems(ctx context.Context, libraryID string, params *LibraryItemListParams) (*Page[LibraryItem], error) {
 	var page Page[LibraryItem]
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/items", params.values())
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
+
 	c.setItemClients(page.Results)
+
 	return &page, nil
 }
 
@@ -274,6 +285,7 @@ func (c *Client) LibraryEpisodeDownloads(ctx context.Context, libraryID string) 
 	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/episode-downloads", &queue); err != nil {
 		return nil, err
 	}
+
 	return &queue, nil
 }
 
@@ -281,13 +293,16 @@ func (c *Client) LibraryEpisodeDownloads(ctx context.Context, libraryID string) 
 // (GET /api/libraries/:id/series).
 func (c *Client) LibrarySeries(ctx context.Context, libraryID string, params *LibraryItemListParams) (*Page[Series], error) {
 	var page Page[Series]
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/series", params.values())
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
+
 	for i := range page.Results {
 		page.Results[i].client = c
 	}
+
 	return &page, nil
 }
 
@@ -295,13 +310,16 @@ func (c *Client) LibrarySeries(ctx context.Context, libraryID string, params *Li
 // (GET /api/libraries/:id/collections).
 func (c *Client) LibraryCollections(ctx context.Context, libraryID string, params *PageParams) (*Page[Collection], error) {
 	var page Page[Collection]
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/collections", params.values())
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
+
 	for i := range page.Results {
 		page.Results[i].client = c
 	}
+
 	return &page, nil
 }
 
@@ -309,13 +327,16 @@ func (c *Client) LibraryCollections(ctx context.Context, libraryID string, param
 // (GET /api/libraries/:id/playlists).
 func (c *Client) LibraryPlaylists(ctx context.Context, libraryID string, params *PageParams) (*Page[Playlist], error) {
 	var page Page[Playlist]
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/playlists", params.values())
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
+
 	for i := range page.Results {
 		page.Results[i].client = c
 	}
+
 	return &page, nil
 }
 
@@ -328,14 +349,18 @@ func (c *Client) LibraryPersonalized(ctx context.Context, libraryID string, limi
 	if limit > 0 {
 		q.Set("limit", strconv.Itoa(limit))
 	}
+
 	if include != "" {
 		q.Set("include", include)
 	}
+
 	var shelves []Shelf
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/personalized", q)
 	if err := c.Get(ctx, path, &shelves); err != nil {
 		return nil, err
 	}
+
 	return shelves, nil
 }
 
@@ -343,9 +368,11 @@ func (c *Client) LibraryPersonalized(ctx context.Context, libraryID string, limi
 // (GET /api/libraries/:id/filterdata).
 func (c *Client) LibraryFilterData(ctx context.Context, libraryID string) (*LibraryFilterData, error) {
 	var data LibraryFilterData
+
 	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/filterdata", &data); err != nil {
 		return nil, err
 	}
+
 	return &data, nil
 }
 
@@ -356,21 +383,26 @@ func (c *Client) SearchLibrary(ctx context.Context, libraryID, query string, lim
 	if limit > 0 {
 		q.Set("limit", strconv.Itoa(limit))
 	}
+
 	var results LibrarySearchResults
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/search", q)
 	if err := c.Get(ctx, path, &results); err != nil {
 		return nil, err
 	}
+
 	for i := range results.Book {
 		if results.Book[i].LibraryItem != nil {
 			results.Book[i].LibraryItem.client = c
 		}
 	}
+
 	for i := range results.Podcast {
 		if results.Podcast[i].LibraryItem != nil {
 			results.Podcast[i].LibraryItem.client = c
 		}
 	}
+
 	return &results, nil
 }
 
@@ -381,6 +413,7 @@ func (c *Client) LibraryStats(ctx context.Context, libraryID string) (*LibrarySt
 	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/stats", &stats); err != nil {
 		return nil, err
 	}
+
 	return &stats, nil
 }
 
@@ -390,12 +423,15 @@ func (c *Client) LibraryAuthors(ctx context.Context, libraryID string) ([]Author
 	var resp struct {
 		Authors []Author `json:"authors"`
 	}
+
 	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/authors", &resp); err != nil {
 		return nil, err
 	}
+
 	for i := range resp.Authors {
 		resp.Authors[i].client = c
 	}
+
 	return resp.Authors, nil
 }
 
@@ -413,6 +449,7 @@ func (c *Client) ScanLibrary(ctx context.Context, libraryID string, force bool) 
 	if force {
 		q.Set("force", "1")
 	}
+
 	return c.Post(ctx, appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/scan", q), nil, nil)
 }
 
@@ -425,10 +462,12 @@ func (c *Client) LibraryRecentEpisodes(ctx context.Context, libraryID string, pa
 		Limit    int              `json:"limit"`
 		Page     int              `json:"page"`
 	}
+
 	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/recent-episodes", params.values())
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
+
 	return &Page[PodcastEpisode]{
 		Results: page.Episodes,
 		Total:   page.Total,
@@ -444,10 +483,13 @@ func (c *Client) ReorderLibraries(ctx context.Context, order []LibraryOrder) ([]
 	var resp struct {
 		Libraries []Library `json:"libraries"`
 	}
+
 	if err := c.Post(ctx, "/api/libraries/order", order, &resp); err != nil {
 		return nil, err
 	}
+
 	c.setLibraryClients(resp.Libraries)
+
 	return resp.Libraries, nil
 }
 
@@ -463,7 +505,9 @@ func (l *Library) Update(ctx context.Context, req *UpdateLibraryRequest) error {
 	if err != nil {
 		return err
 	}
+
 	*l = *updated
+
 	return nil
 }
 

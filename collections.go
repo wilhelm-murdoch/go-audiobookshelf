@@ -2,9 +2,7 @@ package audiobookshelf
 
 import (
 	"context"
-	"fmt"
 	"net/url"
-	"strings"
 )
 
 // CreateCollectionRequest are the parameters for CreateCollection.
@@ -25,21 +23,7 @@ type UpdateCollectionRequest struct {
 }
 
 func collectionPath(id string, rest ...string) (string, error) {
-	var sb strings.Builder
-
-	_, err := sb.WriteString("/api/collections/" + url.PathEscape(id))
-	if err != nil {
-		return "", fmt.Errorf("audiobookshelf: building collection path: %w", err)
-	}
-
-	for _, r := range rest {
-		_, err := sb.WriteString("/" + r)
-		if err != nil {
-			return "", fmt.Errorf("audiobookshelf: building collection path: %w", err)
-		}
-	}
-
-	return sb.String(), nil
+	return basePathBuilder("/api/collections/", id, rest...)
 }
 
 // CreateCollection creates a collection (POST /api/collections).
@@ -48,7 +32,9 @@ func (c *Client) CreateCollection(ctx context.Context, req *CreateCollectionRequ
 	if err := c.Post(ctx, "/api/collections", req, &collection); err != nil {
 		return nil, err
 	}
+
 	collection.client = c
+
 	return &collection, nil
 }
 
