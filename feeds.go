@@ -1,0 +1,67 @@
+package audiobookshelf
+
+import (
+	"context"
+	"net/url"
+)
+
+// OpenRSSFeedRequest are the parameters for the open-RSS-feed endpoints.
+type OpenRSSFeedRequest struct {
+	// ServerAddress is the URL address of the server, used to build the
+	// feed URL.
+	ServerAddress string `json:"serverAddress"`
+	// Slug is the last part of the feed URL.
+	Slug string `json:"slug"`
+}
+
+func (c *Client) openFeed(ctx context.Context, path string, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	var resp struct {
+		Feed *RSSFeed `json:"feed"`
+	}
+	if err := c.Post(ctx, path, req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Feed, nil
+}
+
+// OpenLibraryItemRSSFeed opens an RSS feed for a library item
+// (POST /api/feeds/item/:itemId/open). Requires admin.
+func (c *Client) OpenLibraryItemRSSFeed(ctx context.Context, libraryItemID string, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return c.openFeed(ctx, "/api/feeds/item/"+url.PathEscape(libraryItemID)+"/open", req)
+}
+
+// OpenCollectionRSSFeed opens an RSS feed for a collection
+// (POST /api/feeds/collection/:collectionId/open). Requires admin.
+func (c *Client) OpenCollectionRSSFeed(ctx context.Context, collectionID string, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return c.openFeed(ctx, "/api/feeds/collection/"+url.PathEscape(collectionID)+"/open", req)
+}
+
+// OpenSeriesRSSFeed opens an RSS feed for a series
+// (POST /api/feeds/series/:seriesId/open). Requires admin.
+func (c *Client) OpenSeriesRSSFeed(ctx context.Context, seriesID string, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return c.openFeed(ctx, "/api/feeds/series/"+url.PathEscape(seriesID)+"/open", req)
+}
+
+// CloseRSSFeed closes an open RSS feed (POST /api/feeds/:id/close).
+// Requires admin.
+func (c *Client) CloseRSSFeed(ctx context.Context, feedID string) error {
+	return c.Post(ctx, "/api/feeds/"+url.PathEscape(feedID)+"/close", nil, nil)
+}
+
+// OpenRSSFeed opens an RSS feed for the library item. See
+// Client.OpenLibraryItemRSSFeed.
+func (i *LibraryItem) OpenRSSFeed(ctx context.Context, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return i.client.OpenLibraryItemRSSFeed(ctx, i.ID, req)
+}
+
+// OpenRSSFeed opens an RSS feed for the collection. See
+// Client.OpenCollectionRSSFeed.
+func (col *Collection) OpenRSSFeed(ctx context.Context, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return col.client.OpenCollectionRSSFeed(ctx, col.ID, req)
+}
+
+// OpenRSSFeed opens an RSS feed for the series. See
+// Client.OpenSeriesRSSFeed.
+func (s *Series) OpenRSSFeed(ctx context.Context, req *OpenRSSFeedRequest) (*RSSFeed, error) {
+	return s.client.OpenSeriesRSSFeed(ctx, s.ID, req)
+}
