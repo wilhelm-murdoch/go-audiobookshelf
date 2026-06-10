@@ -201,7 +201,7 @@ func (c *Client) setItemClients(items []LibraryItem) {
 // CreateLibrary creates a new library (POST /api/libraries).
 func (c *Client) CreateLibrary(ctx context.Context, req *CreateLibraryRequest) (*Library, error) {
 	var library Library
-	if err := c.Post(ctx, "/api/libraries", req, &library); err != nil {
+	if err := c.Post(ctx, apiPath("libraries").String(), req, &library); err != nil {
 		return nil, err
 	}
 
@@ -217,7 +217,7 @@ func (c *Client) Libraries(ctx context.Context) ([]Library, error) {
 		Libraries []Library `json:"libraries"`
 	}
 
-	if err := c.Get(ctx, "/api/libraries", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").String(), &resp); err != nil {
 		return nil, err
 	}
 
@@ -229,7 +229,7 @@ func (c *Client) Libraries(ctx context.Context) ([]Library, error) {
 // Library returns the library with the given ID (GET /api/libraries/:id).
 func (c *Client) Library(ctx context.Context, id string) (*Library, error) {
 	var library Library
-	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(id), &library); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").Seg(id).String(), &library); err != nil {
 		return nil, err
 	}
 
@@ -242,7 +242,7 @@ func (c *Client) Library(ctx context.Context, id string) (*Library, error) {
 // the updated library.
 func (c *Client) UpdateLibrary(ctx context.Context, id string, req *UpdateLibraryRequest) (*Library, error) {
 	var library Library
-	if err := c.Patch(ctx, "/api/libraries/"+url.PathEscape(id), req, &library); err != nil {
+	if err := c.Patch(ctx, apiPath("libraries").Seg(id).String(), req, &library); err != nil {
 		return nil, err
 	}
 
@@ -254,7 +254,7 @@ func (c *Client) UpdateLibrary(ctx context.Context, id string, req *UpdateLibrar
 // DeleteLibrary deletes a library (DELETE /api/libraries/:id). Library
 // folders and files are not deleted.
 func (c *Client) DeleteLibrary(ctx context.Context, id string) error {
-	return c.Delete(ctx, "/api/libraries/"+url.PathEscape(id), nil)
+	return c.Delete(ctx, apiPath("libraries").Seg(id).String(), nil)
 }
 
 // LibraryItems lists the items of a library
@@ -262,7 +262,7 @@ func (c *Client) DeleteLibrary(ctx context.Context, id string) error {
 func (c *Client) LibraryItems(ctx context.Context, libraryID string, params *LibraryItemListParams) (*Page[LibraryItem], error) {
 	var page Page[LibraryItem]
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/items", params.values())
+	path := apiPath("libraries").Seg(libraryID).Lit("items").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -275,14 +275,14 @@ func (c *Client) LibraryItems(ctx context.Context, libraryID string, params *Lib
 // RemoveLibraryIssues removes items with issues (missing or invalid) from
 // a library (DELETE /api/libraries/:id/issues). No files are deleted.
 func (c *Client) RemoveLibraryIssues(ctx context.Context, libraryID string) error {
-	return c.Delete(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/issues", nil)
+	return c.Delete(ctx, apiPath("libraries").Seg(libraryID).Lit("issues").String(), nil)
 }
 
 // LibraryEpisodeDownloads returns the podcast episode download queue of a
 // library (GET /api/libraries/:id/episode-downloads).
 func (c *Client) LibraryEpisodeDownloads(ctx context.Context, libraryID string) (*EpisodeDownloadQueue, error) {
 	var queue EpisodeDownloadQueue
-	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/episode-downloads", &queue); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").Seg(libraryID).Lit("episode-downloads").String(), &queue); err != nil {
 		return nil, err
 	}
 
@@ -294,7 +294,7 @@ func (c *Client) LibraryEpisodeDownloads(ctx context.Context, libraryID string) 
 func (c *Client) LibrarySeries(ctx context.Context, libraryID string, params *LibraryItemListParams) (*Page[Series], error) {
 	var page Page[Series]
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/series", params.values())
+	path := apiPath("libraries").Seg(libraryID).Lit("series").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (c *Client) LibrarySeries(ctx context.Context, libraryID string, params *Li
 func (c *Client) LibraryCollections(ctx context.Context, libraryID string, params *PageParams) (*Page[Collection], error) {
 	var page Page[Collection]
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/collections", params.values())
+	path := apiPath("libraries").Seg(libraryID).Lit("collections").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func (c *Client) LibraryCollections(ctx context.Context, libraryID string, param
 func (c *Client) LibraryPlaylists(ctx context.Context, libraryID string, params *PageParams) (*Page[Playlist], error) {
 	var page Page[Playlist]
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/playlists", params.values())
+	path := apiPath("libraries").Seg(libraryID).Lit("playlists").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -345,19 +345,18 @@ func (c *Client) LibraryPlaylists(ctx context.Context, libraryID string, params 
 // entities per shelf (server default 10); include may be "rssfeed" or
 // empty.
 func (c *Client) LibraryPersonalized(ctx context.Context, libraryID string, limit int, include string) ([]Shelf, error) {
-	q := url.Values{}
+	pb := apiPath("libraries").Seg(libraryID).Lit("personalized")
 	if limit > 0 {
-		q.Set("limit", strconv.Itoa(limit))
+		pb.Set("limit", strconv.Itoa(limit))
 	}
 
 	if include != "" {
-		q.Set("include", include)
+		pb.Set("include", include)
 	}
 
 	var shelves []Shelf
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/personalized", q)
-	if err := c.Get(ctx, path, &shelves); err != nil {
+	if err := c.Get(ctx, pb.String(), &shelves); err != nil {
 		return nil, err
 	}
 
@@ -369,7 +368,7 @@ func (c *Client) LibraryPersonalized(ctx context.Context, libraryID string, limi
 func (c *Client) LibraryFilterData(ctx context.Context, libraryID string) (*LibraryFilterData, error) {
 	var data LibraryFilterData
 
-	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/filterdata", &data); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").Seg(libraryID).Lit("filterdata").String(), &data); err != nil {
 		return nil, err
 	}
 
@@ -379,15 +378,14 @@ func (c *Client) LibraryFilterData(ctx context.Context, libraryID string) (*Libr
 // SearchLibrary searches a library (GET /api/libraries/:id/search). limit
 // caps the results per category (server default 12).
 func (c *Client) SearchLibrary(ctx context.Context, libraryID, query string, limit int) (*LibrarySearchResults, error) {
-	q := url.Values{"q": []string{query}}
+	pb := apiPath("libraries").Seg(libraryID).Lit("search").Set("q", query)
 	if limit > 0 {
-		q.Set("limit", strconv.Itoa(limit))
+		pb.Set("limit", strconv.Itoa(limit))
 	}
 
 	var results LibrarySearchResults
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/search", q)
-	if err := c.Get(ctx, path, &results); err != nil {
+	if err := c.Get(ctx, pb.String(), &results); err != nil {
 		return nil, err
 	}
 
@@ -410,7 +408,7 @@ func (c *Client) SearchLibrary(ctx context.Context, libraryID, query string, lim
 // (GET /api/libraries/:id/stats).
 func (c *Client) LibraryStats(ctx context.Context, libraryID string) (*LibraryStats, error) {
 	var stats LibraryStats
-	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/stats", &stats); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").Seg(libraryID).Lit("stats").String(), &stats); err != nil {
 		return nil, err
 	}
 
@@ -424,7 +422,7 @@ func (c *Client) LibraryAuthors(ctx context.Context, libraryID string) ([]Author
 		Authors []Author `json:"authors"`
 	}
 
-	if err := c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/authors", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("libraries").Seg(libraryID).Lit("authors").String(), &resp); err != nil {
 		return nil, err
 	}
 
@@ -438,19 +436,14 @@ func (c *Client) LibraryAuthors(ctx context.Context, libraryID string) ([]Author
 // MatchAllLibraryItems starts a quick match of all items of a library
 // (GET /api/libraries/:id/matchall). Requires admin.
 func (c *Client) MatchAllLibraryItems(ctx context.Context, libraryID string) error {
-	return c.Get(ctx, "/api/libraries/"+url.PathEscape(libraryID)+"/matchall", nil)
+	return c.Get(ctx, apiPath("libraries").Seg(libraryID).Lit("matchall").String(), nil)
 }
 
 // ScanLibrary starts a scan of a library's folders
 // (POST /api/libraries/:id/scan). force rescans all items even when
 // unchanged. Requires admin.
 func (c *Client) ScanLibrary(ctx context.Context, libraryID string, force bool) error {
-	q := url.Values{}
-	if force {
-		q.Set("force", "1")
-	}
-
-	return c.Post(ctx, appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/scan", q), nil, nil)
+	return c.Post(ctx, apiPath("libraries").Seg(libraryID).Lit("scan").Flag("force", force).String(), nil, nil)
 }
 
 // LibraryRecentEpisodes lists recent podcast episodes of a library
@@ -463,7 +456,7 @@ func (c *Client) LibraryRecentEpisodes(ctx context.Context, libraryID string, pa
 		Page     int              `json:"page"`
 	}
 
-	path := appendQuery("/api/libraries/"+url.PathEscape(libraryID)+"/recent-episodes", params.values())
+	path := apiPath("libraries").Seg(libraryID).Lit("recent-episodes").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -484,7 +477,7 @@ func (c *Client) ReorderLibraries(ctx context.Context, order []LibraryOrder) ([]
 		Libraries []Library `json:"libraries"`
 	}
 
-	if err := c.Post(ctx, "/api/libraries/order", order, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("libraries", "order").String(), order, &resp); err != nil {
 		return nil, err
 	}
 

@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 )
 
 // CreatePlaylistRequest are the parameters for CreatePlaylist.
@@ -25,17 +24,13 @@ type UpdatePlaylistRequest struct {
 }
 
 func playlistPath(id string, rest ...string) string {
-	path := "/api/playlists/" + url.PathEscape(id)
-	for _, r := range rest {
-		path += "/" + r
-	}
-	return path
+	return apiPath("playlists").Seg(id).Lit(rest...).String()
 }
 
 // CreatePlaylist creates a playlist (POST /api/playlists).
 func (c *Client) CreatePlaylist(ctx context.Context, req *CreatePlaylistRequest) (*Playlist, error) {
 	var playlist Playlist
-	if err := c.Post(ctx, "/api/playlists", req, &playlist); err != nil {
+	if err := c.Post(ctx, apiPath("playlists").String(), req, &playlist); err != nil {
 		return nil, err
 	}
 	playlist.client = c
@@ -47,7 +42,7 @@ func (c *Client) Playlists(ctx context.Context) ([]Playlist, error) {
 	var resp struct {
 		Playlists []Playlist `json:"playlists"`
 	}
-	if err := c.Get(ctx, "/api/playlists", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("playlists").String(), &resp); err != nil {
 		return nil, err
 	}
 	for i := range resp.Playlists {
@@ -100,10 +95,7 @@ func (c *Client) AddItemToPlaylist(ctx context.Context, id, libraryItemID, episo
 // (DELETE /api/playlists/:id/item/:libraryItemId[/:episodeId]).
 // episodeID may be empty for books.
 func (c *Client) RemoveItemFromPlaylist(ctx context.Context, id, libraryItemID, episodeID string) (*Playlist, error) {
-	path := playlistPath(id, "item", url.PathEscape(libraryItemID))
-	if episodeID != "" {
-		path += "/" + url.PathEscape(episodeID)
-	}
+	path := apiPath("playlists").Seg(id).Lit("item").Seg(libraryItemID, episodeID).String()
 	var playlist Playlist
 	if err := c.Delete(ctx, path, &playlist); err != nil {
 		return nil, err
@@ -138,7 +130,7 @@ func (c *Client) BatchRemovePlaylistItems(ctx context.Context, id string, items 
 // a collection (POST /api/playlists/collection/:collectionId).
 func (c *Client) CreatePlaylistFromCollection(ctx context.Context, collectionID string) (*Playlist, error) {
 	var playlist Playlist
-	if err := c.Post(ctx, "/api/playlists/collection/"+url.PathEscape(collectionID), nil, &playlist); err != nil {
+	if err := c.Post(ctx, apiPath("playlists", "collection").Seg(collectionID).String(), nil, &playlist); err != nil {
 		return nil, err
 	}
 	playlist.client = c

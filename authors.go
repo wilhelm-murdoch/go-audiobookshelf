@@ -62,12 +62,7 @@ type AuthorMatchResult struct {
 }
 
 func authorPath(id string, rest ...string) string {
-	path := "/api/authors/" + url.PathEscape(id)
-	for _, r := range rest {
-		path += "/" + r
-	}
-
-	return path
+	return apiPath("authors").Seg(id).Lit(rest...).String()
 }
 
 // Author returns an author.
@@ -75,7 +70,7 @@ func authorPath(id string, rest ...string) string {
 func (c *Client) Author(ctx context.Context, id string, params *AuthorParams) (*Author, error) {
 	var author Author
 
-	if err := c.Get(ctx, appendQuery(authorPath(id), params.values()), &author); err != nil {
+	if err := c.Get(ctx, apiPath("authors").Seg(id).Query(params.values()).String(), &author); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +113,7 @@ func (c *Client) MatchAuthor(ctx context.Context, id string, req *MatchAuthorReq
 // The string result is the image's Content-Type.
 // GET /api/authors/:id/image
 func (c *Client) AuthorImage(ctx context.Context, id string, params *ImageParams) (io.ReadCloser, string, error) {
-	return c.getBinary(ctx, appendQuery(authorPath(id, "image"), params.values()))
+	return c.getBinary(ctx, apiPath("authors").Seg(id).Lit("image").Query(params.values()).String())
 }
 
 // Update updates the author.

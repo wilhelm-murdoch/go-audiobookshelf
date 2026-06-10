@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 	"strings"
 )
 
@@ -16,12 +15,12 @@ type UpdateSeriesRequest struct {
 // Series returns a series (GET /api/series/:id). include lists extras to
 // include: "progress" and/or "rssfeed".
 func (c *Client) Series(ctx context.Context, id string, include ...string) (*Series, error) {
-	q := url.Values{}
+	pb := apiPath("series").Seg(id)
 	if len(include) > 0 {
-		q.Set("include", strings.Join(include, ","))
+		pb.Set("include", strings.Join(include, ","))
 	}
 	var series Series
-	if err := c.Get(ctx, appendQuery("/api/series/"+url.PathEscape(id), q), &series); err != nil {
+	if err := c.Get(ctx, pb.String(), &series); err != nil {
 		return nil, err
 	}
 	series.client = c
@@ -31,7 +30,7 @@ func (c *Client) Series(ctx context.Context, id string, include ...string) (*Ser
 // UpdateSeries updates a series (PATCH /api/series/:id).
 func (c *Client) UpdateSeries(ctx context.Context, id string, req *UpdateSeriesRequest) (*Series, error) {
 	var series Series
-	if err := c.Patch(ctx, "/api/series/"+url.PathEscape(id), req, &series); err != nil {
+	if err := c.Patch(ctx, apiPath("series").Seg(id).String(), req, &series); err != nil {
 		return nil, err
 	}
 	series.client = c

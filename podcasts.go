@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 	"strconv"
 )
 
@@ -45,18 +44,14 @@ type PodcastSearchEpisode struct {
 }
 
 func podcastPath(id string, rest ...string) string {
-	path := "/api/podcasts/" + url.PathEscape(id)
-	for _, r := range rest {
-		path += "/" + r
-	}
-	return path
+	return apiPath("podcasts").Seg(id).Lit(rest...).String()
 }
 
 // CreatePodcast creates a podcast library item (POST /api/podcasts).
 // Requires upload permission.
 func (c *Client) CreatePodcast(ctx context.Context, req *CreatePodcastRequest) (*LibraryItem, error) {
 	var item LibraryItem
-	if err := c.Post(ctx, "/api/podcasts", req, &item); err != nil {
+	if err := c.Post(ctx, apiPath("podcasts").String(), req, &item); err != nil {
 		return nil, err
 	}
 	item.client = c
@@ -69,7 +64,7 @@ func (c *Client) PodcastFeed(ctx context.Context, feedURL string) (*PodcastFeed,
 	var resp struct {
 		Podcast *PodcastFeed `json:"podcast"`
 	}
-	if err := c.Post(ctx, "/api/podcasts/feed", map[string]string{"rssFeed": feedURL}, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("podcasts", "feed").String(), map[string]string{"rssFeed": feedURL}, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Podcast, nil
@@ -81,7 +76,7 @@ func (c *Client) PodcastFeedsFromOPML(ctx context.Context, opmlText string) ([]P
 	var resp struct {
 		Feeds []PodcastFeed `json:"feeds"`
 	}
-	if err := c.Post(ctx, "/api/podcasts/opml", map[string]string{"opmlText": opmlText}, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("podcasts", "opml").String(), map[string]string{"opmlText": opmlText}, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Feeds, nil
@@ -92,14 +87,14 @@ func (c *Client) PodcastFeedsFromOPML(ctx context.Context, opmlText string) ([]P
 // of episodes downloaded (server default 3, 0 keeps the default). It
 // returns the episodes that will be downloaded.
 func (c *Client) CheckNewPodcastEpisodes(ctx context.Context, id string, limit int) ([]PodcastFeedEpisode, error) {
-	q := url.Values{}
+	pb := apiPath("podcasts").Seg(id).Lit("checknew")
 	if limit > 0 {
-		q.Set("limit", strconv.Itoa(limit))
+		pb.Set("limit", strconv.Itoa(limit))
 	}
 	var resp struct {
 		Episodes []PodcastFeedEpisode `json:"episodes"`
 	}
-	if err := c.Get(ctx, appendQuery(podcastPath(id, "checknew"), q), &resp); err != nil {
+	if err := c.Get(ctx, pb.String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Episodes, nil
@@ -126,11 +121,11 @@ func (c *Client) ClearPodcastEpisodeDownloadQueue(ctx context.Context, id string
 // SearchPodcastFeedForEpisodes searches a podcast's feed for episodes by
 // title (GET /api/podcasts/:id/search-episode).
 func (c *Client) SearchPodcastFeedForEpisodes(ctx context.Context, id, title string) ([]PodcastSearchEpisode, error) {
-	q := url.Values{"title": []string{title}}
 	var resp struct {
 		Episodes []PodcastSearchEpisode `json:"episodes"`
 	}
-	if err := c.Get(ctx, appendQuery(podcastPath(id, "search-episode"), q), &resp); err != nil {
+	path := apiPath("podcasts").Seg(id).Lit("search-episode").Set("title", title).String()
+	if err := c.Get(ctx, path, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Episodes, nil
@@ -147,14 +142,11 @@ func (c *Client) DownloadPodcastEpisodes(ctx context.Context, id string, episode
 // override overwrites existing details. It returns the number of
 // episodes updated.
 func (c *Client) MatchPodcastEpisodes(ctx context.Context, id string, override bool) (int, error) {
-	q := url.Values{}
-	if override {
-		q.Set("override", "1")
-	}
 	var resp struct {
 		NumEpisodesUpdated int `json:"numEpisodesUpdated"`
 	}
-	if err := c.Post(ctx, appendQuery(podcastPath(id, "match-episodes"), q), nil, &resp); err != nil {
+	path := apiPath("podcasts").Seg(id).Lit("match-episodes").Flag("override", override).String()
+	if err := c.Post(ctx, path, nil, &resp); err != nil {
 		return 0, err
 	}
 	return resp.NumEpisodesUpdated, nil
@@ -164,7 +156,8 @@ func (c *Client) MatchPodcastEpisodes(ctx context.Context, id string, override b
 // (GET /api/podcasts/:id/episode/:episodeId).
 func (c *Client) PodcastEpisode(ctx context.Context, id, episodeID string) (*PodcastEpisode, error) {
 	var episode PodcastEpisode
-	if err := c.Get(ctx, podcastPath(id, "episode", url.PathEscape(episodeID)), &episode); err != nil {
+	path := apiPath("podcasts").Seg(id).Lit("episode").Seg(episodeID).String()
+	if err := c.Get(ctx, path, &episode); err != nil {
 		return nil, err
 	}
 	return &episode, nil
@@ -175,7 +168,8 @@ func (c *Client) PodcastEpisode(ctx context.Context, id, episodeID string) (*Pod
 // library item.
 func (c *Client) UpdatePodcastEpisode(ctx context.Context, id, episodeID string, update *PodcastEpisodeUpdate) (*LibraryItem, error) {
 	var item LibraryItem
-	if err := c.Patch(ctx, podcastPath(id, "episode", url.PathEscape(episodeID)), update, &item); err != nil {
+	path := apiPath("podcasts").Seg(id).Lit("episode").Seg(episodeID).String()
+	if err := c.Patch(ctx, path, update, &item); err != nil {
 		return nil, err
 	}
 	item.client = c
@@ -187,12 +181,9 @@ func (c *Client) UpdatePodcastEpisode(ctx context.Context, id, episodeID string,
 // audio file is also deleted from the filesystem. It returns the updated
 // library item.
 func (c *Client) DeletePodcastEpisode(ctx context.Context, id, episodeID string, hard bool) (*LibraryItem, error) {
-	q := url.Values{}
-	if hard {
-		q.Set("hard", "1")
-	}
 	var item LibraryItem
-	if err := c.Delete(ctx, appendQuery(podcastPath(id, "episode", url.PathEscape(episodeID)), q), &item); err != nil {
+	path := apiPath("podcasts").Seg(id).Lit("episode").Seg(episodeID).Flag("hard", hard).String()
+	if err := c.Delete(ctx, path, &item); err != nil {
 		return nil, err
 	}
 	item.client = c

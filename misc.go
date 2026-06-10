@@ -3,11 +3,8 @@ package audiobookshelf
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"io"
-	"net/url"
 	"strconv"
-	"strings"
 )
 
 // UploadFile is one file of an UploadFilesRequest.
@@ -62,7 +59,7 @@ func (c *Client) UploadFiles(ctx context.Context, req *UploadFilesRequest) error
 			reader:   f.Reader,
 		})
 	}
-	return c.postMultipart(ctx, "/api/upload", fields, files, nil)
+	return c.postMultipart(ctx, apiPath("upload").String(), fields, files, nil)
 }
 
 // UpdateServerSettings updates server settings (PATCH /api/settings) and
@@ -74,7 +71,7 @@ func (c *Client) UpdateServerSettings(ctx context.Context, patch map[string]any)
 		Success        bool            `json:"success"`
 		ServerSettings *ServerSettings `json:"serverSettings"`
 	}
-	if err := c.Patch(ctx, "/api/settings", patch, &resp); err != nil {
+	if err := c.Patch(ctx, apiPath("settings").String(), patch, &resp); err != nil {
 		return nil, err
 	}
 	return resp.ServerSettings, nil
@@ -84,7 +81,7 @@ func (c *Client) UpdateServerSettings(ctx context.Context, patch map[string]any)
 // the client's token (POST /api/authorize).
 func (c *Client) Authorize(ctx context.Context) (*LoginResponse, error) {
 	var resp LoginResponse
-	if err := c.Post(ctx, "/api/authorize", nil, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("authorize").String(), nil, &resp); err != nil {
 		return nil, err
 	}
 	if resp.User != nil {
@@ -98,7 +95,7 @@ func (c *Client) Tags(ctx context.Context) ([]string, error) {
 	var resp struct {
 		Tags []string `json:"tags"`
 	}
-	if err := c.Get(ctx, "/api/tags", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("tags").String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Tags, nil
@@ -112,7 +109,7 @@ func (c *Client) RenameTag(ctx context.Context, tag, newTag string) (*RenameResu
 		TagMerged       bool `json:"tagMerged"`
 		NumItemsUpdated int  `json:"numItemsUpdated"`
 	}
-	if err := c.Post(ctx, "/api/tags/rename", body, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("tags", "rename").String(), body, &resp); err != nil {
 		return nil, err
 	}
 	return &RenameResult{Merged: resp.TagMerged, NumItemsUpdated: resp.NumItemsUpdated}, nil
@@ -126,7 +123,7 @@ func (c *Client) DeleteTag(ctx context.Context, tag string) (int, error) {
 	var resp struct {
 		NumItemsUpdated int `json:"numItemsUpdated"`
 	}
-	if err := c.Delete(ctx, "/api/tags/"+url.PathEscape(encoded), &resp); err != nil {
+	if err := c.Delete(ctx, apiPath("tags").Seg(encoded).String(), &resp); err != nil {
 		return 0, err
 	}
 	return resp.NumItemsUpdated, nil
@@ -137,7 +134,7 @@ func (c *Client) Genres(ctx context.Context) ([]string, error) {
 	var resp struct {
 		Genres []string `json:"genres"`
 	}
-	if err := c.Get(ctx, "/api/genres", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("genres").String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Genres, nil
@@ -151,7 +148,7 @@ func (c *Client) RenameGenre(ctx context.Context, genre, newGenre string) (*Rena
 		GenreMerged     bool `json:"genreMerged"`
 		NumItemsUpdated int  `json:"numItemsUpdated"`
 	}
-	if err := c.Post(ctx, "/api/genres/rename", body, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("genres", "rename").String(), body, &resp); err != nil {
 		return nil, err
 	}
 	return &RenameResult{Merged: resp.GenreMerged, NumItemsUpdated: resp.NumItemsUpdated}, nil
@@ -165,7 +162,7 @@ func (c *Client) DeleteGenre(ctx context.Context, genre string) (int, error) {
 	var resp struct {
 		NumItemsUpdated int `json:"numItemsUpdated"`
 	}
-	if err := c.Delete(ctx, "/api/genres/"+url.PathEscape(encoded), &resp); err != nil {
+	if err := c.Delete(ctx, apiPath("genres").Seg(encoded).String(), &resp); err != nil {
 		return 0, err
 	}
 	return resp.NumItemsUpdated, nil
@@ -174,23 +171,5 @@ func (c *Client) DeleteGenre(ctx context.Context, genre string) (int, error) {
 // ValidateCron validates a cron expression (POST /api/validate-cron). A
 // nil error means the expression is valid.
 func (c *Client) ValidateCron(ctx context.Context, expression string) error {
-	return c.Post(ctx, "/api/validate-cron", map[string]string{"expression": expression}, nil)
-}
-
-func basePathBuilder(base, id string, parts ...string) (string, error) {
-	var sb strings.Builder
-
-	_, err := sb.WriteString(base + url.PathEscape(id))
-	if err != nil {
-		return "", fmt.Errorf("audiobookshelf: building path: %w", err)
-	}
-
-	for _, r := range parts {
-		_, err := sb.WriteString("/" + r)
-		if err != nil {
-			return "", fmt.Errorf("audiobookshelf: building path: %w", err)
-		}
-	}
-
-	return sb.String(), nil
+	return c.Post(ctx, apiPath("validate-cron").String(), map[string]string{"expression": expression}, nil)
 }

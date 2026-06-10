@@ -103,25 +103,20 @@ type QuickMatchOptions struct {
 	OverrideDefaults bool   `json:"overrideDefaults,omitempty"`
 }
 
-func itemPath(id string, rest ...string) (string, error) {
-	return basePathBuilder("/api/items/", id, rest...)
+func itemPath(id string, rest ...string) string {
+	return apiPath("items").Seg(id).Lit(rest...).String()
 }
 
 // DeleteAllLibraryItems deletes ALL library items from the database
 // (DELETE /api/items/all). No files are deleted. Requires the root user.
 func (c *Client) DeleteAllLibraryItems(ctx context.Context) error {
-	return c.Delete(ctx, "/api/items/all", nil)
+	return c.Delete(ctx, apiPath("items", "all").String(), nil)
 }
 
 // LibraryItem returns a library item (GET /api/items/:id).
 func (c *Client) LibraryItem(ctx context.Context, id string, params *LibraryItemParams) (*LibraryItem, error) {
-	path, err := itemPath(id)
-	if err != nil {
-		return nil, err
-	}
-
 	var item LibraryItem
-	if err := c.Get(ctx, appendQuery(path, params.values()), &item); err != nil {
+	if err := c.Get(ctx, apiPath("items").Seg(id).Query(params.values()).String(), &item); err != nil {
 		return nil, err
 	}
 
@@ -134,29 +129,14 @@ func (c *Client) LibraryItem(ctx context.Context, id string, params *LibraryItem
 // (DELETE /api/items/:id). With hard, the item's files are also deleted
 // from the filesystem.
 func (c *Client) DeleteLibraryItem(ctx context.Context, id string, hard bool) error {
-	q := url.Values{}
-	if hard {
-		q.Set("hard", "1")
-	}
-
-	path, err := itemPath(id)
-	if err != nil {
-		return err
-	}
-
-	return c.Delete(ctx, appendQuery(path, q), nil)
+	return c.Delete(ctx, apiPath("items").Seg(id).Flag("hard", hard).String(), nil)
 }
 
 // UpdateLibraryItemMedia updates a library item's media
 // (PATCH /api/items/:id/media).
 func (c *Client) UpdateLibraryItemMedia(ctx context.Context, id string, update *MediaUpdate) (*UpdateMediaResult, error) {
-	path, err := itemPath(id, "media")
-	if err != nil {
-		return nil, err
-	}
-
 	var result UpdateMediaResult
-	if err := c.Patch(ctx, path, update, &result); err != nil {
+	if err := c.Patch(ctx, itemPath(id, "media"), update, &result); err != nil {
 		return nil, err
 	}
 
@@ -171,12 +151,7 @@ func (c *Client) UpdateLibraryItemMedia(ctx context.Context, id string, update *
 // (GET /api/items/:id/cover). The caller must close the reader. The
 // string result is the image's Content-Type.
 func (c *Client) LibraryItemCover(ctx context.Context, id string, params *ImageParams) (io.ReadCloser, string, error) {
-	path, err := itemPath(id, "cover")
-	if err != nil {
-		return nil, "", err
-	}
-
-	return c.getBinary(ctx, appendQuery(path, params.values()))
+	return c.getBinary(ctx, apiPath("items").Seg(id).Lit("cover").Query(params.values()).String())
 }
 
 // UploadLibraryItemCover uploads a cover image for a library item
@@ -184,57 +159,32 @@ func (c *Client) LibraryItemCover(ctx context.Context, id string, params *ImageP
 func (c *Client) UploadLibraryItemCover(ctx context.Context, id, filename string, cover io.Reader) error {
 	files := []multipartFile{{field: "cover", filename: filename, reader: cover}}
 
-	path, err := itemPath(id, "cover")
-	if err != nil {
-		return err
-	}
-
-	return c.postMultipart(ctx, path, nil, files, nil)
+	return c.postMultipart(ctx, itemPath(id, "cover"), nil, files, nil)
 }
 
 // SetLibraryItemCoverFromURL has the server download a cover image for a
 // library item (POST /api/items/:id/cover with a url payload).
 func (c *Client) SetLibraryItemCoverFromURL(ctx context.Context, id, coverURL string) error {
-	path, err := itemPath(id, "cover")
-	if err != nil {
-		return err
-	}
-
-	return c.Post(ctx, path, map[string]string{"url": coverURL}, nil)
+	return c.Post(ctx, itemPath(id, "cover"), map[string]string{"url": coverURL}, nil)
 }
 
 // UpdateLibraryItemCover points a library item's cover at an image file
 // already on the server (PATCH /api/items/:id/cover).
 func (c *Client) UpdateLibraryItemCover(ctx context.Context, id, coverPath string) error {
-	path, err := itemPath(id, "cover")
-	if err != nil {
-		return err
-	}
-
-	return c.Patch(ctx, path, map[string]string{"cover": coverPath}, nil)
+	return c.Patch(ctx, itemPath(id, "cover"), map[string]string{"cover": coverPath}, nil)
 }
 
 // RemoveLibraryItemCover removes a library item's cover
 // (DELETE /api/items/:id/cover).
 func (c *Client) RemoveLibraryItemCover(ctx context.Context, id string) error {
-	path, err := itemPath(id, "cover")
-	if err != nil {
-		return err
-	}
-
-	return c.Delete(ctx, path, nil)
+	return c.Delete(ctx, itemPath(id, "cover"), nil)
 }
 
 // MatchLibraryItem matches a library item against a metadata provider and
 // updates its details (POST /api/items/:id/match).
 func (c *Client) MatchLibraryItem(ctx context.Context, id string, req *MatchLibraryItemRequest) (*MatchResult, error) {
-	path, err := itemPath(id, "match")
-	if err != nil {
-		return nil, err
-	}
-
 	var result MatchResult
-	if err := c.Post(ctx, path, req, &result); err != nil {
+	if err := c.Post(ctx, itemPath(id, "match"), req, &result); err != nil {
 		return nil, err
 	}
 
@@ -252,13 +202,8 @@ func (c *Client) PlayLibraryItem(ctx context.Context, id string, req *PlayReques
 		req = &PlayRequest{}
 	}
 
-	path, err := itemPath(id, "play")
-	if err != nil {
-		return nil, err
-	}
-
 	var session PlaybackSession
-	if err := c.Post(ctx, path, req, &session); err != nil {
+	if err := c.Post(ctx, itemPath(id, "play"), req, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -271,10 +216,7 @@ func (c *Client) PlayPodcastEpisode(ctx context.Context, id, episodeID string, r
 		req = &PlayRequest{}
 	}
 
-	path, err := itemPath(id, "play", url.PathEscape(episodeID))
-	if err != nil {
-		return nil, err
-	}
+	path := apiPath("items").Seg(id).Lit("play").Seg(episodeID).String()
 
 	var session PlaybackSession
 	if err := c.Post(ctx, path, req, &session); err != nil {
@@ -289,13 +231,8 @@ func (c *Client) PlayPodcastEpisode(ctx context.Context, id, episodeID string, r
 func (c *Client) UpdateLibraryItemTracks(ctx context.Context, id string, order []TrackOrder) (*LibraryItem, error) {
 	body := map[string]any{"orderedFileData": order}
 
-	path, err := itemPath(id, "tracks")
-	if err != nil {
-		return nil, err
-	}
-
 	var item LibraryItem
-	if err := c.Patch(ctx, path, body, &item); err != nil {
+	if err := c.Patch(ctx, itemPath(id, "tracks"), body, &item); err != nil {
 		return nil, err
 	}
 
@@ -312,12 +249,7 @@ func (c *Client) ScanLibraryItem(ctx context.Context, id string) (string, error)
 		Result string `json:"result"`
 	}
 
-	path, err := itemPath(id, "scan")
-	if err != nil {
-		return "", err
-	}
-
-	if err := c.Post(ctx, path, nil, &resp); err != nil {
+	if err := c.Post(ctx, itemPath(id, "scan"), nil, &resp); err != nil {
 		return "", err
 	}
 
@@ -327,13 +259,8 @@ func (c *Client) ScanLibraryItem(ctx context.Context, id string) (string, error)
 // LibraryItemToneObject returns the tone metadata object of a library
 // item (GET /api/items/:id/tone-object). Requires admin.
 func (c *Client) LibraryItemToneObject(ctx context.Context, id string) (map[string]any, error) {
-	path, err := itemPath(id, "tone-object")
-	if err != nil {
-		return nil, err
-	}
-
 	var tone map[string]any
-	if err := c.Get(ctx, path, &tone); err != nil {
+	if err := c.Get(ctx, itemPath(id, "tone-object"), &tone); err != nil {
 		return nil, err
 	}
 
@@ -351,12 +278,7 @@ func (c *Client) UpdateLibraryItemChapters(ctx context.Context, id string, chapt
 		Updated bool `json:"updated"`
 	}
 
-	path, err := itemPath(id, "chapters")
-	if err != nil {
-		return false, err
-	}
-
-	if err := c.Post(ctx, path, body, &resp); err != nil {
+	if err := c.Post(ctx, itemPath(id, "chapters"), body, &resp); err != nil {
 		return false, err
 	}
 
@@ -367,17 +289,13 @@ func (c *Client) UpdateLibraryItemChapters(ctx context.Context, id string, chapt
 // (POST /api/items/:id/tone-scan/:index). index selects the audio file
 // (1-based); pass 0 for the first file. Requires admin.
 func (c *Client) ToneScanLibraryItem(ctx context.Context, id string, index int) (map[string]any, error) {
-	path, err := itemPath(id, "tone-scan")
-	if err != nil {
-		return nil, err
-	}
-
+	pb := apiPath("items").Seg(id).Lit("tone-scan")
 	if index > 0 {
-		path += "/" + strconv.Itoa(index)
+		pb.Lit(strconv.Itoa(index))
 	}
 
 	var result map[string]any
-	if err := c.Post(ctx, path, nil, &result); err != nil {
+	if err := c.Post(ctx, pb.String(), nil, &result); err != nil {
 		return nil, err
 	}
 
@@ -387,7 +305,7 @@ func (c *Client) ToneScanLibraryItem(ctx context.Context, id string, index int) 
 // BatchDeleteLibraryItems deletes multiple library items from the
 // database (POST /api/items/batch/delete). No files are deleted.
 func (c *Client) BatchDeleteLibraryItems(ctx context.Context, ids []string) error {
-	return c.Post(ctx, "/api/items/batch/delete", map[string]any{"libraryItemIds": ids}, nil)
+	return c.Post(ctx, apiPath("items", "batch", "delete").String(), map[string]any{"libraryItemIds": ids}, nil)
 }
 
 // BatchUpdateLibraryItems updates the media of multiple library items
@@ -399,7 +317,7 @@ func (c *Client) BatchUpdateLibraryItems(ctx context.Context, updates []BatchUpd
 		Updates int  `json:"updates"`
 	}
 
-	if err := c.Post(ctx, "/api/items/batch/update", updates, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("items", "batch", "update").String(), updates, &resp); err != nil {
 		return 0, err
 	}
 
@@ -413,7 +331,7 @@ func (c *Client) BatchGetLibraryItems(ctx context.Context, ids []string) ([]Libr
 		LibraryItems []LibraryItem `json:"libraryItems"`
 	}
 
-	if err := c.Post(ctx, "/api/items/batch/get", map[string]any{"libraryItemIds": ids}, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("items", "batch", "get").String(), map[string]any{"libraryItemIds": ids}, &resp); err != nil {
 		return nil, err
 	}
 
@@ -430,7 +348,7 @@ func (c *Client) BatchQuickMatchLibraryItems(ctx context.Context, ids []string, 
 		body["options"] = opts
 	}
 
-	return c.Post(ctx, "/api/items/batch/quickmatch", body, nil)
+	return c.Post(ctx, apiPath("items", "batch", "quickmatch").String(), body, nil)
 }
 
 // Delete deletes the library item. See Client.DeleteLibraryItem.

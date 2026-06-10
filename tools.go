@@ -61,19 +61,19 @@ func (p *EmbedMetadataParams) values() url.Values {
 // M4B audiobook file (POST /api/tools/item/:id/encode-m4b). Requires
 // admin.
 func (c *Client) EncodeM4B(ctx context.Context, libraryItemID string, params *EncodeM4BParams) error {
-	path := appendQuery("/api/tools/item/"+url.PathEscape(libraryItemID)+"/encode-m4b", params.values())
+	path := apiPath("tools", "item").Seg(libraryItemID).Lit("encode-m4b").Query(params.values()).String()
 	return c.Post(ctx, path, nil, nil)
 }
 
 // CancelM4BEncode cancels a running M4B encode task
 // (DELETE /api/tools/item/:id/encode-m4b). Requires admin.
 func (c *Client) CancelM4BEncode(ctx context.Context, libraryItemID string) error {
-	return c.Delete(ctx, "/api/tools/item/"+url.PathEscape(libraryItemID)+"/encode-m4b", nil)
+	return c.Delete(ctx, apiPath("tools", "item").Seg(libraryItemID).Lit("encode-m4b").String(), nil)
 }
 
 // EmbedMetadata starts a task embedding metadata into a library item's
 // audio files (POST /api/tools/item/:id/embed-metadata). Requires admin.
 func (c *Client) EmbedMetadata(ctx context.Context, libraryItemID string, params *EmbedMetadataParams) error {
-	path := appendQuery("/api/tools/item/"+url.PathEscape(libraryItemID)+"/embed-metadata", params.values())
+	path := apiPath("tools", "item").Seg(libraryItemID).Lit("embed-metadata").Query(params.values()).String()
 	return c.Post(ctx, path, nil, nil)
 }

@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 )
 
 // CreateUserRequest are the parameters for CreateUser.
@@ -52,11 +51,7 @@ type SessionsPage struct {
 }
 
 func userPath(id string, rest ...string) string {
-	path := "/api/users/" + url.PathEscape(id)
-	for _, r := range rest {
-		path += "/" + r
-	}
-	return path
+	return apiPath("users").Seg(id).Lit(rest...).String()
 }
 
 // CreateUser creates a user (POST /api/users). Requires admin.
@@ -64,7 +59,7 @@ func (c *Client) CreateUser(ctx context.Context, req *CreateUserRequest) (*User,
 	var resp struct {
 		User User `json:"user"`
 	}
-	if err := c.Post(ctx, "/api/users", req, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("users").String(), req, &resp); err != nil {
 		return nil, err
 	}
 	resp.User.client = c
@@ -76,7 +71,7 @@ func (c *Client) Users(ctx context.Context) ([]User, error) {
 	var resp struct {
 		Users []User `json:"users"`
 	}
-	if err := c.Get(ctx, "/api/users", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("users").String(), &resp); err != nil {
 		return nil, err
 	}
 	for i := range resp.Users {
@@ -89,7 +84,7 @@ func (c *Client) Users(ctx context.Context) ([]User, error) {
 // sessions (GET /api/users/online). Requires admin.
 func (c *Client) OnlineUsers(ctx context.Context) (*OnlineUsers, error) {
 	var resp OnlineUsers
-	if err := c.Get(ctx, "/api/users/online", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("users", "online").String(), &resp); err != nil {
 		return nil, err
 	}
 	for i := range resp.UsersOnline {
@@ -130,7 +125,7 @@ func (c *Client) DeleteUser(ctx context.Context, id string) error {
 // (GET /api/users/:id/listening-sessions). Requires admin.
 func (c *Client) UserListeningSessions(ctx context.Context, id string, params *SessionListParams) (*SessionsPage, error) {
 	var page SessionsPage
-	path := appendQuery(userPath(id, "listening-sessions"), params.values())
+	path := apiPath("users").Seg(id).Lit("listening-sessions").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}

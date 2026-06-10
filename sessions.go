@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 )
 
 // SessionSync are the playback position parameters for SyncOpenSession
@@ -28,7 +27,7 @@ type SessionSyncResult struct {
 // Requires admin. Use params.User to filter by user.
 func (c *Client) Sessions(ctx context.Context, params *SessionListParams) (*SessionsPage, error) {
 	var page SessionsPage
-	if err := c.Get(ctx, appendQuery("/api/sessions", params.values()), &page); err != nil {
+	if err := c.Get(ctx, apiPath("sessions").Query(params.values()).String(), &page); err != nil {
 		return nil, err
 	}
 	return &page, nil
@@ -36,13 +35,13 @@ func (c *Client) Sessions(ctx context.Context, params *SessionListParams) (*Sess
 
 // DeleteSession deletes a playback session (DELETE /api/sessions/:id).
 func (c *Client) DeleteSession(ctx context.Context, id string) error {
-	return c.Delete(ctx, "/api/sessions/"+url.PathEscape(id), nil)
+	return c.Delete(ctx, apiPath("sessions").Seg(id).String(), nil)
 }
 
 // SyncLocalSession syncs a playback session from a client device
 // (POST /api/session/local).
 func (c *Client) SyncLocalSession(ctx context.Context, session *PlaybackSession) error {
-	return c.Post(ctx, "/api/session/local", session, nil)
+	return c.Post(ctx, apiPath("session", "local").String(), session, nil)
 }
 
 // SyncLocalSessions syncs multiple playback sessions from a client
@@ -52,7 +51,7 @@ func (c *Client) SyncLocalSessions(ctx context.Context, sessions []PlaybackSessi
 	var resp struct {
 		Results []SessionSyncResult `json:"results"`
 	}
-	if err := c.Post(ctx, "/api/session/local-all", body, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("session", "local-all").String(), body, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Results, nil
@@ -62,7 +61,7 @@ func (c *Client) SyncLocalSessions(ctx context.Context, sessions []PlaybackSessi
 // (GET /api/session/:id).
 func (c *Client) OpenSession(ctx context.Context, id string) (*PlaybackSession, error) {
 	var session PlaybackSession
-	if err := c.Get(ctx, "/api/session/"+url.PathEscape(id), &session); err != nil {
+	if err := c.Get(ctx, apiPath("session").Seg(id).String(), &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -71,7 +70,7 @@ func (c *Client) OpenSession(ctx context.Context, id string) (*PlaybackSession, 
 // SyncOpenSession reports playback progress for one of your open
 // playback sessions (POST /api/session/:id/sync).
 func (c *Client) SyncOpenSession(ctx context.Context, id string, sync *SessionSync) error {
-	return c.Post(ctx, "/api/session/"+url.PathEscape(id)+"/sync", sync, nil)
+	return c.Post(ctx, apiPath("session").Seg(id).Lit("sync").String(), sync, nil)
 }
 
 // CloseOpenSession closes one of your open playback sessions
@@ -82,5 +81,5 @@ func (c *Client) CloseOpenSession(ctx context.Context, id string, sync *SessionS
 	if sync != nil {
 		body = sync
 	}
-	return c.Post(ctx, "/api/session/"+url.PathEscape(id)+"/close", body, nil)
+	return c.Post(ctx, apiPath("session").Seg(id).Lit("close").String(), body, nil)
 }

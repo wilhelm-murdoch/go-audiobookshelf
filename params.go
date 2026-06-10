@@ -5,14 +5,6 @@ import (
 	"strconv"
 )
 
-// appendQuery appends an encoded query string to path if q is non-empty.
-func appendQuery(path string, q url.Values) string {
-	if len(q) == 0 {
-		return path
-	}
-	return path + "?" + q.Encode()
-}
-
 // PageParams are the limit/page parameters used by paginated list
 // endpoints. Pages are 0-indexed. A zero Limit applies no limit.
 type PageParams struct {

@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 )
 
 // CreateCollectionRequest are the parameters for CreateCollection.
@@ -22,14 +21,14 @@ type UpdateCollectionRequest struct {
 	Books       []string `json:"books,omitempty"`
 }
 
-func collectionPath(id string, rest ...string) (string, error) {
-	return basePathBuilder("/api/collections/", id, rest...)
+func collectionPath(id string, rest ...string) string {
+	return apiPath("collections").Seg(id).Lit(rest...).String()
 }
 
 // CreateCollection creates a collection (POST /api/collections).
 func (c *Client) CreateCollection(ctx context.Context, req *CreateCollectionRequest) (*Collection, error) {
 	var collection Collection
-	if err := c.Post(ctx, "/api/collections", req, &collection); err != nil {
+	if err := c.Post(ctx, apiPath("collections").String(), req, &collection); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +44,7 @@ func (c *Client) Collections(ctx context.Context) ([]Collection, error) {
 		Collections []Collection `json:"collections"`
 	}
 
-	if err := c.Get(ctx, "/api/collections", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("collections").String(), &resp); err != nil {
 		return nil, err
 	}
 
@@ -59,18 +58,13 @@ func (c *Client) Collections(ctx context.Context) ([]Collection, error) {
 // Collection returns a collection (GET /api/collections/:id). include may
 // be "rssfeed" or empty.
 func (c *Client) Collection(ctx context.Context, id string, include string) (*Collection, error) {
-	q := url.Values{}
+	pb := apiPath("collections").Seg(id)
 	if include != "" {
-		q.Set("include", include)
-	}
-
-	path, err := collectionPath(id)
-	if err != nil {
-		return nil, err
+		pb.Set("include", include)
 	}
 
 	var collection Collection
-	if err := c.Get(ctx, appendQuery(path, q), &collection); err != nil {
+	if err := c.Get(ctx, pb.String(), &collection); err != nil {
 		return nil, err
 	}
 
@@ -81,13 +75,8 @@ func (c *Client) Collection(ctx context.Context, id string, include string) (*Co
 
 // UpdateCollection updates a collection (PATCH /api/collections/:id).
 func (c *Client) UpdateCollection(ctx context.Context, id string, req *UpdateCollectionRequest) (*Collection, error) {
-	path, err := collectionPath(id)
-	if err != nil {
-		return nil, err
-	}
-
 	var collection Collection
-	if err := c.Patch(ctx, path, req, &collection); err != nil {
+	if err := c.Patch(ctx, collectionPath(id), req, &collection); err != nil {
 		return nil, err
 	}
 	collection.client = c
@@ -96,24 +85,14 @@ func (c *Client) UpdateCollection(ctx context.Context, id string, req *UpdateCol
 
 // DeleteCollection deletes a collection (DELETE /api/collections/:id).
 func (c *Client) DeleteCollection(ctx context.Context, id string) error {
-	path, err := collectionPath(id)
-	if err != nil {
-		return err
-	}
-
-	return c.Delete(ctx, path, nil)
+	return c.Delete(ctx, collectionPath(id), nil)
 }
 
 // AddBookToCollection adds a book library item to a collection
 // (POST /api/collections/:id/book).
 func (c *Client) AddBookToCollection(ctx context.Context, id, bookID string) (*Collection, error) {
-	path, err := collectionPath(id, "book")
-	if err != nil {
-		return nil, err
-	}
-
 	var collection Collection
-	if err := c.Post(ctx, path, map[string]string{"id": bookID}, &collection); err != nil {
+	if err := c.Post(ctx, collectionPath(id, "book"), map[string]string{"id": bookID}, &collection); err != nil {
 		return nil, err
 	}
 
@@ -125,10 +104,7 @@ func (c *Client) AddBookToCollection(ctx context.Context, id, bookID string) (*C
 // RemoveBookFromCollection removes a book library item from a collection
 // (DELETE /api/collections/:id/book/:bookId).
 func (c *Client) RemoveBookFromCollection(ctx context.Context, id, bookID string) (*Collection, error) {
-	path, err := collectionPath(id, "book", url.PathEscape(bookID))
-	if err != nil {
-		return nil, err
-	}
+	path := apiPath("collections").Seg(id).Lit("book").Seg(bookID).String()
 
 	var collection Collection
 	if err := c.Delete(ctx, path, &collection); err != nil {
@@ -143,13 +119,8 @@ func (c *Client) RemoveBookFromCollection(ctx context.Context, id, bookID string
 // BatchAddBooksToCollection adds multiple book library items to a
 // collection (POST /api/collections/:id/batch/add).
 func (c *Client) BatchAddBooksToCollection(ctx context.Context, id string, bookIDs []string) (*Collection, error) {
-	path, err := collectionPath(id, "batch", "add")
-	if err != nil {
-		return nil, err
-	}
-
 	var collection Collection
-	if err := c.Post(ctx, path, map[string]any{"books": bookIDs}, &collection); err != nil {
+	if err := c.Post(ctx, collectionPath(id, "batch", "add"), map[string]any{"books": bookIDs}, &collection); err != nil {
 		return nil, err
 	}
 
@@ -161,13 +132,8 @@ func (c *Client) BatchAddBooksToCollection(ctx context.Context, id string, bookI
 // BatchRemoveBooksFromCollection removes multiple book library items from
 // a collection (POST /api/collections/:id/batch/remove).
 func (c *Client) BatchRemoveBooksFromCollection(ctx context.Context, id string, bookIDs []string) (*Collection, error) {
-	path, err := collectionPath(id, "batch", "remove")
-	if err != nil {
-		return nil, err
-	}
-
 	var collection Collection
-	if err := c.Post(ctx, path, map[string]any{"books": bookIDs}, &collection); err != nil {
+	if err := c.Post(ctx, collectionPath(id, "batch", "remove"), map[string]any{"books": bookIDs}, &collection); err != nil {
 		return nil, err
 	}
 

@@ -3,7 +3,6 @@ package audiobookshelf
 import (
 	"context"
 	"errors"
-	"net/url"
 	"strconv"
 )
 
@@ -37,17 +36,13 @@ type LocalProgressSyncResult struct {
 }
 
 func myProgressPath(libraryItemID, episodeID string) string {
-	path := "/api/me/progress/" + url.PathEscape(libraryItemID)
-	if episodeID != "" {
-		path += "/" + url.PathEscape(episodeID)
-	}
-	return path
+	return apiPath("me", "progress").Seg(libraryItemID, episodeID).String()
 }
 
 // Me returns the authenticated user (GET /api/me).
 func (c *Client) Me(ctx context.Context) (*User, error) {
 	var user User
-	if err := c.Get(ctx, "/api/me", &user); err != nil {
+	if err := c.Get(ctx, apiPath("me").String(), &user); err != nil {
 		return nil, err
 	}
 	user.client = c
@@ -58,7 +53,7 @@ func (c *Client) Me(ctx context.Context) (*User, error) {
 // (GET /api/me/listening-sessions).
 func (c *Client) MyListeningSessions(ctx context.Context, params *SessionListParams) (*SessionsPage, error) {
 	var page SessionsPage
-	path := appendQuery("/api/me/listening-sessions", params.values())
+	path := apiPath("me", "listening-sessions").Query(params.values()).String()
 	if err := c.Get(ctx, path, &page); err != nil {
 		return nil, err
 	}
@@ -69,7 +64,7 @@ func (c *Client) MyListeningSessions(ctx context.Context, params *SessionListPar
 // (GET /api/me/listening-stats).
 func (c *Client) MyListeningStats(ctx context.Context) (*ListeningStats, error) {
 	var stats ListeningStats
-	if err := c.Get(ctx, "/api/me/listening-stats", &stats); err != nil {
+	if err := c.Get(ctx, apiPath("me", "listening-stats").String(), &stats); err != nil {
 		return nil, err
 	}
 	return &stats, nil
@@ -81,7 +76,7 @@ func (c *Client) MyListeningStats(ctx context.Context) (*ListeningStats, error) 
 // is a MediaProgress.ID. It returns your updated user.
 func (c *Client) RemoveItemFromContinueListening(ctx context.Context, progressID string) (*User, error) {
 	var user User
-	path := "/api/me/progress/" + url.PathEscape(progressID) + "/remove-from-continue-listening"
+	path := apiPath("me", "progress").Seg(progressID).Lit("remove-from-continue-listening").String()
 	if err := c.Get(ctx, path, &user); err != nil {
 		return nil, err
 	}
@@ -111,13 +106,13 @@ func (c *Client) UpdateMyMediaProgress(ctx context.Context, libraryItemID, episo
 // BatchUpdateMyMediaProgress creates or updates multiple media progress
 // entries (PATCH /api/me/progress/batch/update).
 func (c *Client) BatchUpdateMyMediaProgress(ctx context.Context, updates []MediaProgressBatchUpdate) error {
-	return c.Patch(ctx, "/api/me/progress/batch/update", updates, nil)
+	return c.Patch(ctx, apiPath("me", "progress", "batch", "update").String(), updates, nil)
 }
 
 // RemoveMyMediaProgress removes one of your media progress entries
 // (DELETE /api/me/progress/:id). progressID is a MediaProgress.ID.
 func (c *Client) RemoveMyMediaProgress(ctx context.Context, progressID string) error {
-	return c.Delete(ctx, "/api/me/progress/"+url.PathEscape(progressID), nil)
+	return c.Delete(ctx, apiPath("me", "progress").Seg(progressID).String(), nil)
 }
 
 // CreateBookmark creates a bookmark on a book
@@ -125,7 +120,7 @@ func (c *Client) RemoveMyMediaProgress(ctx context.Context, progressID string) e
 func (c *Client) CreateBookmark(ctx context.Context, libraryItemID string, time int, title string) (*Bookmark, error) {
 	body := map[string]any{"time": time, "title": title}
 	var bookmark Bookmark
-	if err := c.Post(ctx, "/api/me/item/"+url.PathEscape(libraryItemID)+"/bookmark", body, &bookmark); err != nil {
+	if err := c.Post(ctx, apiPath("me", "item").Seg(libraryItemID).Lit("bookmark").String(), body, &bookmark); err != nil {
 		return nil, err
 	}
 	return &bookmark, nil
@@ -136,7 +131,7 @@ func (c *Client) CreateBookmark(ctx context.Context, libraryItemID string, time 
 func (c *Client) UpdateBookmark(ctx context.Context, libraryItemID string, time int, title string) (*Bookmark, error) {
 	body := map[string]any{"time": time, "title": title}
 	var bookmark Bookmark
-	if err := c.Patch(ctx, "/api/me/item/"+url.PathEscape(libraryItemID)+"/bookmark", body, &bookmark); err != nil {
+	if err := c.Patch(ctx, apiPath("me", "item").Seg(libraryItemID).Lit("bookmark").String(), body, &bookmark); err != nil {
 		return nil, err
 	}
 	return &bookmark, nil
@@ -145,7 +140,7 @@ func (c *Client) UpdateBookmark(ctx context.Context, libraryItemID string, time 
 // RemoveBookmark removes the bookmark at time
 // (DELETE /api/me/item/:id/bookmark/:time).
 func (c *Client) RemoveBookmark(ctx context.Context, libraryItemID string, time int) error {
-	path := "/api/me/item/" + url.PathEscape(libraryItemID) + "/bookmark/" + strconv.Itoa(time)
+	path := apiPath("me", "item").Seg(libraryItemID).Lit("bookmark", strconv.Itoa(time)).String()
 	return c.Delete(ctx, path, nil)
 }
 
@@ -156,7 +151,7 @@ func (c *Client) ChangeMyPassword(ctx context.Context, currentPassword, newPassw
 		Success bool   `json:"success"`
 		Error   string `json:"error"`
 	}
-	if err := c.Patch(ctx, "/api/me/password", body, &resp); err != nil {
+	if err := c.Patch(ctx, apiPath("me", "password").String(), body, &resp); err != nil {
 		return err
 	}
 	if !resp.Success {
@@ -173,7 +168,7 @@ func (c *Client) ChangeMyPassword(ctx context.Context, currentPassword, newPassw
 func (c *Client) SyncLocalMediaProgress(ctx context.Context, localProgress []MediaProgress) (*LocalProgressSyncResult, error) {
 	body := map[string]any{"localMediaProgress": localProgress}
 	var result LocalProgressSyncResult
-	if err := c.Post(ctx, "/api/me/sync-local-progress", body, &result); err != nil {
+	if err := c.Post(ctx, apiPath("me", "sync-local-progress").String(), body, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -184,14 +179,14 @@ func (c *Client) SyncLocalMediaProgress(ctx context.Context, localProgress []Med
 // default 25). Podcast items carry RecentEpisode; all items carry
 // ProgressLastUpdate.
 func (c *Client) MyItemsInProgress(ctx context.Context, limit int) ([]LibraryItem, error) {
-	q := url.Values{}
+	pb := apiPath("me", "items-in-progress")
 	if limit > 0 {
-		q.Set("limit", strconv.Itoa(limit))
+		pb.Set("limit", strconv.Itoa(limit))
 	}
 	var resp struct {
 		LibraryItems []LibraryItem `json:"libraryItems"`
 	}
-	if err := c.Get(ctx, appendQuery("/api/me/items-in-progress", q), &resp); err != nil {
+	if err := c.Get(ctx, pb.String(), &resp); err != nil {
 		return nil, err
 	}
 	c.setItemClients(resp.LibraryItems)
@@ -204,7 +199,7 @@ func (c *Client) MyItemsInProgress(ctx context.Context, limit int) ([]LibraryIte
 // your updated user.
 func (c *Client) RemoveSeriesFromContinueListening(ctx context.Context, seriesID string) (*User, error) {
 	var user User
-	path := "/api/me/series/" + url.PathEscape(seriesID) + "/remove-from-continue-listening"
+	path := apiPath("me", "series").Seg(seriesID).Lit("remove-from-continue-listening").String()
 	if err := c.Get(ctx, path, &user); err != nil {
 		return nil, err
 	}

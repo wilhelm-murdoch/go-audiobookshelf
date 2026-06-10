@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
 )
@@ -15,7 +14,7 @@ func (c *Client) Backups(ctx context.Context) ([]Backup, error) {
 	var resp struct {
 		Backups []Backup `json:"backups"`
 	}
-	if err := c.Get(ctx, "/api/backups", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("backups").String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Backups, nil
@@ -27,7 +26,7 @@ func (c *Client) CreateBackup(ctx context.Context) ([]Backup, error) {
 	var resp struct {
 		Backups []Backup `json:"backups"`
 	}
-	if err := c.Post(ctx, "/api/backups", nil, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("backups").String(), nil, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Backups, nil
@@ -39,7 +38,7 @@ func (c *Client) DeleteBackup(ctx context.Context, id string) ([]Backup, error) 
 	var resp struct {
 		Backups []Backup `json:"backups"`
 	}
-	if err := c.Delete(ctx, "/api/backups/"+url.PathEscape(id), &resp); err != nil {
+	if err := c.Delete(ctx, apiPath("backups").Seg(id).String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Backups, nil
@@ -49,7 +48,7 @@ func (c *Client) DeleteBackup(ctx context.Context, id string) ([]Backup, error) 
 // (GET /api/backups/:id/download; present on the server but not in the
 // API docs). The caller must close the reader. Requires the root user.
 func (c *Client) DownloadBackup(ctx context.Context, id string) (io.ReadCloser, error) {
-	body, _, err := c.getBinary(ctx, "/api/backups/"+url.PathEscape(id)+"/download")
+	body, _, err := c.getBinary(ctx, apiPath("backups").Seg(id).Lit("download").String())
 	return body, err
 }
 
@@ -101,7 +100,7 @@ func (c *Client) DownloadBackupTo(ctx context.Context, id, dest string) (string,
 // ApplyBackup restores a backup (GET /api/backups/:id/apply). Requires
 // admin.
 func (c *Client) ApplyBackup(ctx context.Context, id string) error {
-	return c.Get(ctx, "/api/backups/"+url.PathEscape(id)+"/apply", nil)
+	return c.Get(ctx, apiPath("backups").Seg(id).Lit("apply").String(), nil)
 }
 
 // UpdateBackupPath changes the directory on the server where backups
@@ -110,7 +109,7 @@ func (c *Client) ApplyBackup(ctx context.Context, id string) error {
 // server's BACKUP_PATH environment variable is set, the change reverts
 // on restart. Requires the root user.
 func (c *Client) UpdateBackupPath(ctx context.Context, path string) error {
-	return c.Patch(ctx, "/api/backups/path", map[string]string{"path": path}, nil)
+	return c.Patch(ctx, apiPath("backups", "path").String(), map[string]string{"path": path}, nil)
 }
 
 // UploadBackup uploads a backup file (POST /api/backups/upload) and
@@ -121,7 +120,7 @@ func (c *Client) UploadBackup(ctx context.Context, filename string, file io.Read
 	}
 
 	files := []multipartFile{{field: "file", filename: filename, reader: file}}
-	if err := c.postMultipart(ctx, "/api/backups/upload", nil, files, &resp); err != nil {
+	if err := c.postMultipart(ctx, apiPath("backups", "upload").String(), nil, files, &resp); err != nil {
 		return nil, err
 	}
 

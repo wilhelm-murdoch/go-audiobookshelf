@@ -2,7 +2,6 @@ package audiobookshelf
 
 import (
 	"context"
-	"net/url"
 )
 
 // NotificationData bundles the notification settings and available
@@ -40,7 +39,7 @@ type NotificationRequest struct {
 // event data (GET /api/notifications). Requires admin.
 func (c *Client) NotificationSettings(ctx context.Context) (*NotificationData, error) {
 	var data NotificationData
-	if err := c.Get(ctx, "/api/notifications", &data); err != nil {
+	if err := c.Get(ctx, apiPath("notifications").String(), &data); err != nil {
 		return nil, err
 	}
 	return &data, nil
@@ -49,7 +48,7 @@ func (c *Client) NotificationSettings(ctx context.Context) (*NotificationData, e
 // UpdateNotificationSettings updates the server's notification settings
 // (PATCH /api/notifications). Requires admin.
 func (c *Client) UpdateNotificationSettings(ctx context.Context, req *UpdateNotificationSettingsRequest) error {
-	return c.Patch(ctx, "/api/notifications", req, nil)
+	return c.Patch(ctx, apiPath("notifications").String(), req, nil)
 }
 
 // NotificationEvents returns the available notification events
@@ -58,7 +57,7 @@ func (c *Client) NotificationEvents(ctx context.Context) ([]NotificationEvent, e
 	var resp struct {
 		Events []NotificationEvent `json:"events"`
 	}
-	if err := c.Get(ctx, "/api/notificationdata", &resp); err != nil {
+	if err := c.Get(ctx, apiPath("notificationdata").String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Events, nil
@@ -68,11 +67,7 @@ func (c *Client) NotificationEvents(ctx context.Context) ([]NotificationEvent, e
 // (GET /api/notifications/test). fail makes the notification fail on
 // purpose. Requires admin.
 func (c *Client) FireTestNotificationEvent(ctx context.Context, fail bool) error {
-	q := url.Values{}
-	if fail {
-		q.Set("fail", "1")
-	}
-	return c.Get(ctx, appendQuery("/api/notifications/test", q), nil)
+	return c.Get(ctx, apiPath("notifications", "test").Flag("fail", fail).String(), nil)
 }
 
 // CreateNotification creates a notification (POST /api/notifications)
@@ -81,7 +76,7 @@ func (c *Client) CreateNotification(ctx context.Context, req *NotificationReques
 	var resp struct {
 		Settings *NotificationSettings `json:"settings"`
 	}
-	if err := c.Post(ctx, "/api/notifications", req, &resp); err != nil {
+	if err := c.Post(ctx, apiPath("notifications").String(), req, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Settings, nil
@@ -94,7 +89,7 @@ func (c *Client) DeleteNotification(ctx context.Context, id string) (*Notificati
 	var resp struct {
 		Settings *NotificationSettings `json:"settings"`
 	}
-	if err := c.Delete(ctx, "/api/notifications/"+url.PathEscape(id), &resp); err != nil {
+	if err := c.Delete(ctx, apiPath("notifications").Seg(id).String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Settings, nil
@@ -106,7 +101,7 @@ func (c *Client) UpdateNotification(ctx context.Context, req *NotificationReques
 	var resp struct {
 		Settings *NotificationSettings `json:"settings"`
 	}
-	if err := c.Patch(ctx, "/api/notifications/"+url.PathEscape(req.ID), req, &resp); err != nil {
+	if err := c.Patch(ctx, apiPath("notifications").Seg(req.ID).String(), req, &resp); err != nil {
 		return nil, err
 	}
 	return resp.Settings, nil
@@ -115,5 +110,5 @@ func (c *Client) UpdateNotification(ctx context.Context, req *NotificationReques
 // SendTestNotification sends a test of a configured notification
 // (GET /api/notifications/:id/test). Requires admin.
 func (c *Client) SendTestNotification(ctx context.Context, id string) error {
-	return c.Get(ctx, "/api/notifications/"+url.PathEscape(id)+"/test", nil)
+	return c.Get(ctx, apiPath("notifications").Seg(id).Lit("test").String(), nil)
 }

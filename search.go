@@ -3,7 +3,6 @@ package audiobookshelf
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 )
 
 // CoverSearchParams are the parameters for SearchCovers.
@@ -98,20 +97,20 @@ type ChapterSearchResult struct {
 // SearchCovers searches metadata providers for cover images
 // (GET /api/search/covers) and returns image URLs.
 func (c *Client) SearchCovers(ctx context.Context, params *CoverSearchParams) ([]string, error) {
-	q := url.Values{"title": []string{params.Title}}
+	pb := apiPath("search", "covers").Set("title", params.Title)
 	if params.Author != "" {
-		q.Set("author", params.Author)
+		pb.Set("author", params.Author)
 	}
 	if params.Provider != "" {
-		q.Set("provider", params.Provider)
+		pb.Set("provider", params.Provider)
 	}
 	if params.Podcast {
-		q.Set("podcast", "1")
+		pb.Flag("podcast", true)
 	}
 	var resp struct {
 		Results []string `json:"results"`
 	}
-	if err := c.Get(ctx, appendQuery("/api/search/covers", q), &resp); err != nil {
+	if err := c.Get(ctx, pb.String(), &resp); err != nil {
 		return nil, err
 	}
 	return resp.Results, nil
@@ -120,18 +119,18 @@ func (c *Client) SearchCovers(ctx context.Context, params *CoverSearchParams) ([
 // SearchBooks searches a metadata provider for books
 // (GET /api/search/books).
 func (c *Client) SearchBooks(ctx context.Context, params *BookSearchParams) ([]BookSearchResult, error) {
-	q := url.Values{}
+	pb := apiPath("search", "books")
 	if params.Title != "" {
-		q.Set("title", params.Title)
+		pb.Set("title", params.Title)
 	}
 	if params.Author != "" {
-		q.Set("author", params.Author)
+		pb.Set("author", params.Author)
 	}
 	if params.Provider != "" {
-		q.Set("provider", params.Provider)
+		pb.Set("provider", params.Provider)
 	}
 	var results []BookSearchResult
-	if err := c.Get(ctx, appendQuery("/api/search/books", q), &results); err != nil {
+	if err := c.Get(ctx, pb.String(), &results); err != nil {
 		return nil, err
 	}
 	return results, nil
@@ -140,9 +139,8 @@ func (c *Client) SearchBooks(ctx context.Context, params *BookSearchParams) ([]B
 // SearchPodcasts searches iTunes for podcasts
 // (GET /api/search/podcast).
 func (c *Client) SearchPodcasts(ctx context.Context, term string) ([]PodcastSearchResult, error) {
-	q := url.Values{"term": []string{term}}
 	var results []PodcastSearchResult
-	if err := c.Get(ctx, appendQuery("/api/search/podcast", q), &results); err != nil {
+	if err := c.Get(ctx, apiPath("search", "podcast").Set("term", term).String(), &results); err != nil {
 		return nil, err
 	}
 	return results, nil
@@ -152,9 +150,8 @@ func (c *Client) SearchPodcasts(ctx context.Context, term string) ([]PodcastSear
 // (GET /api/search/authors). The name must match exactly to get a
 // result.
 func (c *Client) SearchAuthors(ctx context.Context, name string) (*AuthorSearchResult, error) {
-	q := url.Values{"q": []string{name}}
 	var result AuthorSearchResult
-	if err := c.Get(ctx, appendQuery("/api/search/authors", q), &result); err != nil {
+	if err := c.Get(ctx, apiPath("search", "authors").Set("q", name).String(), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
@@ -163,12 +160,12 @@ func (c *Client) SearchAuthors(ctx context.Context, name string) (*AuthorSearchR
 // SearchChapters searches Audnexus for a book's chapters by ASIN
 // (GET /api/search/chapters). region is e.g. "us" (the server default).
 func (c *Client) SearchChapters(ctx context.Context, asin, region string) (*ChapterSearchResult, error) {
-	q := url.Values{"asin": []string{asin}}
+	pb := apiPath("search", "chapters").Set("asin", asin)
 	if region != "" {
-		q.Set("region", region)
+		pb.Set("region", region)
 	}
 	var result ChapterSearchResult
-	if err := c.Get(ctx, appendQuery("/api/search/chapters", q), &result); err != nil {
+	if err := c.Get(ctx, pb.String(), &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

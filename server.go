@@ -26,7 +26,7 @@ type ServerStatus struct {
 func (c *Client) Login(ctx context.Context, username, password string) (*LoginResponse, error) {
 	body := map[string]string{"username": username, "password": password}
 	var resp LoginResponse
-	if err := c.Post(ctx, "/login", body, &resp); err != nil {
+	if err := c.Post(ctx, rawPath("/login").String(), body, &resp); err != nil {
 		return nil, err
 	}
 	if resp.User != nil {
@@ -45,7 +45,7 @@ func (c *Client) Logout(ctx context.Context, socketID string) error {
 	if socketID != "" {
 		body = map[string]string{"socketId": socketID}
 	}
-	return c.Post(ctx, "/logout", body, nil)
+	return c.Post(ctx, rawPath("/logout").String(), body, nil)
 }
 
 // InitServer initializes a brand-new server with a root user
@@ -54,14 +54,14 @@ func (c *Client) InitServer(ctx context.Context, rootUsername, rootPassword stri
 	body := map[string]map[string]string{
 		"newRoot": {"username": rootUsername, "password": rootPassword},
 	}
-	return c.Post(ctx, "/init", body, nil)
+	return c.Post(ctx, rawPath("/init").String(), body, nil)
 }
 
 // Status reports the server's initialization status (GET /status). It
 // does not require authentication.
 func (c *Client) Status(ctx context.Context) (*ServerStatus, error) {
 	var status ServerStatus
-	if err := c.Get(ctx, "/status", &status); err != nil {
+	if err := c.Get(ctx, rawPath("/status").String(), &status); err != nil {
 		return nil, err
 	}
 	return &status, nil
@@ -70,11 +70,11 @@ func (c *Client) Status(ctx context.Context) (*ServerStatus, error) {
 // Ping checks that the server is up and responding with JSON
 // (GET /ping). It does not require authentication.
 func (c *Client) Ping(ctx context.Context) error {
-	return c.Get(ctx, "/ping", nil)
+	return c.Get(ctx, rawPath("/ping").String(), nil)
 }
 
 // Healthcheck checks that the server is operating (GET /healthcheck). It
 // does not require authentication.
 func (c *Client) Healthcheck(ctx context.Context) error {
-	return c.Get(ctx, "/healthcheck", nil)
+	return c.Get(ctx, rawPath("/healthcheck").String(), nil)
 }
