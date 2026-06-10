@@ -119,9 +119,11 @@ func (c *Client) UploadBackup(ctx context.Context, filename string, file io.Read
 	var resp struct {
 		Backups []Backup `json:"backups"`
 	}
+
 	files := []multipartFile{{field: "file", filename: filename, reader: file}}
 	if err := c.postMultipart(ctx, "/api/backups/upload", nil, files, &resp); err != nil {
 		return nil, err
 	}
+
 	return resp.Backups, nil
 }

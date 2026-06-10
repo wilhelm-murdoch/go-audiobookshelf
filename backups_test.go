@@ -28,14 +28,17 @@ func TestDownloadBackupTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DownloadBackupTo(dir): %v", err)
 	}
+
 	want := filepath.Join(dir, "2022-11-14T0130.audiobookshelf")
 	if path != want {
 		t.Errorf("path = %q, want %q", path, want)
 	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("reading downloaded backup: %v", err)
 	}
+
 	if string(data) != "backup-bytes" {
 		t.Errorf("contents = %q", data)
 	}
@@ -46,9 +49,11 @@ func TestDownloadBackupTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DownloadBackupTo(file): %v", err)
 	}
+
 	if path != explicit {
 		t.Errorf("path = %q, want %q", path, explicit)
 	}
+
 	if data, _ := os.ReadFile(explicit); string(data) != "backup-bytes" {
 		t.Errorf("contents = %q", data)
 	}
