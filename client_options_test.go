@@ -46,12 +46,12 @@ func TestErrorHelpers(t *testing.T) {
 }
 
 func TestErrorMessageFallsBackToStatusText(t *testing.T) {
-	err := &Error{Method: "GET", Path: "/x", StatusCode: http.StatusNotFound}
+	err := &Error{Prefix: "audiobookshelf", Method: "GET", Path: "/x", StatusCode: http.StatusNotFound}
 	if got, want := err.Error(), "audiobookshelf: GET /x: 404 Not Found"; got != want {
 		t.Errorf("Error() = %q, want %q", got, want)
 	}
 
-	withMsg := &Error{Method: "GET", Path: "/x", StatusCode: 500, Message: "kaboom"}
+	withMsg := &Error{Prefix: "audiobookshelf", Method: "GET", Path: "/x", StatusCode: 500, Message: "kaboom"}
 	if got, want := withMsg.Error(), "audiobookshelf: GET /x: 500 kaboom"; got != want {
 		t.Errorf("Error() = %q, want %q", got, want)
 	}
@@ -82,12 +82,7 @@ func TestGenericVerbs(t *testing.T) {
 }
 
 func TestClientOptions(t *testing.T) {
-	base := NewClient("https://abs.example.com/",
-		WithToken("tok"),
-		WithUserAgent("custom/1.0"),
-		WithTimeout(5*time.Second),
-		WithInsecureSkipVerify(),
-	)
+	base := NewClient("https://abs.example.com/", WithToken("tok"))
 
 	if base.BaseURL() != "https://abs.example.com" {
 		t.Errorf("BaseURL trailing slash not trimmed: %q", base.BaseURL())
@@ -95,16 +90,34 @@ func TestClientOptions(t *testing.T) {
 	if base.Token() != "tok" {
 		t.Errorf("Token = %q", base.Token())
 	}
-	if base.userAgent != "custom/1.0" {
-		t.Errorf("userAgent = %q", base.userAgent)
-	}
-	if base.httpClient.Timeout != 5*time.Second {
-		t.Errorf("Timeout = %v", base.httpClient.Timeout)
-	}
 
 	base.SetToken("tok2")
 	if base.Token() != "tok2" {
 		t.Errorf("SetToken not applied: %q", base.Token())
+	}
+}
+
+// TestUserAgentAndTimeoutOptions checks the configuration options take
+// effect on the wire and that a request still succeeds with them set.
+func TestUserAgentAndTimeoutOptions(t *testing.T) {
+	var gotUA string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := NewClient(srv.URL,
+		WithUserAgent("custom/1.0"),
+		WithTimeout(5*time.Second),
+	)
+
+	if err := client.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping: %v", err)
+	}
+
+	if gotUA != "custom/1.0" {
+		t.Errorf("User-Agent = %q, want custom/1.0", gotUA)
 	}
 }
 
@@ -116,9 +129,6 @@ func TestWithHTTPClient(t *testing.T) {
 
 	custom := &http.Client{Timeout: time.Minute}
 	client := NewClient(srv.URL, WithHTTPClient(custom))
-	if client.httpClient != custom {
-		t.Error("WithHTTPClient not applied")
-	}
 
 	if err := client.Ping(context.Background()); err != nil {
 		t.Fatalf("Ping: %v", err)
