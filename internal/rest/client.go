@@ -30,6 +30,7 @@ type Client struct {
 	userAgent  string
 	auth       Authenticator
 	errPrefix  string
+	debug      io.Writer
 }
 
 // Option configures a Client.
@@ -89,6 +90,16 @@ func New(baseURL string, opts ...Option) *Client {
 
 	for _, opt := range opts {
 		opt(c)
+	}
+
+	// Apply the debug wrapper last so it captures whatever transport the
+	// other options settled on (custom client, skipped TLS verification).
+	if c.debug != nil {
+		base := c.httpClient.Transport
+		if base == nil {
+			base = http.DefaultTransport
+		}
+		c.httpClient.Transport = newDebugTransport(base, c.debug)
 	}
 
 	return c

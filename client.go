@@ -84,6 +84,18 @@ func WithInsecureSkipVerify() Option {
 	return func(c *Client) { c.restOpts = append(c.restOpts, rest.WithInsecureSkipVerify()) }
 }
 
+// WithDebug logs every request and response — method, URL, headers, and
+// body — to w. It is a debugging aid for inspecting what the server
+// actually sends; it is not a production logger.
+//
+// Security: the Authorization and cookie headers are redacted, but bodies
+// are printed verbatim and may contain secrets — most notably the
+// username and password sent by Login. Never enable it against a server
+// on an untrusted network, and scrub the output before sharing it.
+func WithDebug(w io.Writer) Option {
+	return func(c *Client) { c.restOpts = append(c.restOpts, rest.WithDebug(w)) }
+}
+
 // NewClient returns a Client for the Audiobookshelf server at baseURL.
 func NewClient(baseURL string, opts ...Option) *Client {
 	c := &Client{auth: rest.NewBearerToken("")}
