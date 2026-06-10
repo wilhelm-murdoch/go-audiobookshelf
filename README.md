@@ -77,7 +77,7 @@ client := audiobookshelf.NewClient("https://abs.example.com",
 )
 ```
 
-Other options: 
+Other options:
 - `WithHTTPClient`
 - `WithTimeout`
 - `WithUserAgent`
@@ -171,3 +171,27 @@ length := item.Media.Duration.Duration() // time.Duration
 cur := audiobookshelf.SecondsFromDuration(90 * time.Second)
 _ = client.UpdateMyMediaProgress(ctx, id, "", &audiobookshelf.MediaProgressUpdate{CurrentTime: &cur})
 ```
+
+## Development
+
+```sh
+make test    # unit tests
+make lint    # golangci-lint (pinned via go run)
+make cover   # unit tests with coverage
+make vet     # go vet
+make fmt     # gofmt the tree
+```
+
+The HTTP transport, path building, error model, and authentication live in `internal/rest` — a small, API-agnostic toolkit that the typed client wraps. It has its own tests and is the seam to reuse if you ever build another SDK on the same base.
+
+Functional tests run against a real server and are gated behind the `integration` build tag and the `ABS_BASE_URL` environment variable, so they stay out of the normal unit run:
+
+```sh
+ABS_BASE_URL=http://localhost:13378 make integration
+```
+
+CI (GitHub Actions and Woodpecker) runs vet, tests, lint, and the integration suite against a pinned Audiobookshelf container.
+
+## License
+
+[MIT](LICENSE) © nightcity-network
