@@ -778,7 +778,7 @@ type NotificationEvent struct {
 	Defaults         struct {
 		Title string `json:"title,omitempty"`
 		Body  string `json:"body,omitempty"`
-	} `json:"defaults,omitempty"`
+	} `json:"defaults"`
 	// TestData holds example values used when firing a test
 	// notification. Values are usually strings but may be numbers, so it
 	// is decoded as map[string]any.
