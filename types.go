@@ -717,7 +717,10 @@ type NotificationEvent struct {
 		Title string `json:"title,omitempty"`
 		Body  string `json:"body,omitempty"`
 	} `json:"defaults,omitempty"`
-	TestData map[string]string `json:"testData,omitempty"`
+	// TestData holds example values used when firing a test
+	// notification. Values are usually strings but may be numbers, so it
+	// is decoded as map[string]any.
+	TestData map[string]any `json:"testData,omitempty"`
 }
 
 // ServerSettings are the settings of the server.

@@ -164,7 +164,7 @@ func TestIntegrationUserLifecycle(t *testing.T) {
 	}
 }
 
-func TestIntegrationLibraryCollectionPlaylist(t *testing.T) {
+func TestIntegrationLibraryAndPlaylist(t *testing.T) {
 	ctx := context.Background()
 
 	// /metadata is a standard, always-present directory in the official
@@ -190,19 +190,9 @@ func TestIntegrationLibraryCollectionPlaylist(t *testing.T) {
 		t.Errorf("Library().ID = %q, want %q", fetched.ID, lib.ID)
 	}
 
-	col, err := itClient.CreateCollection(ctx, &CreateCollectionRequest{
-		LibraryID: lib.ID,
-		Name:      "it-collection",
-	})
-	if err != nil {
-		t.Fatalf("CreateCollection: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := itClient.DeleteCollection(context.Background(), col.ID); err != nil {
-			t.Errorf("cleanup DeleteCollection: %v", err)
-		}
-	})
-
+	// NOTE: collections cannot be created empty — Audiobookshelf rejects
+	// them with "No books" — so collection CRUD is deferred to the
+	// media-dependent (tier 2) suite. Playlists may be created empty.
 	pl, err := itClient.CreatePlaylist(ctx, &CreatePlaylistRequest{
 		LibraryID: lib.ID,
 		Name:      "it-playlist",

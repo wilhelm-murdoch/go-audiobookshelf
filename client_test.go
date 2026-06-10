@@ -156,6 +156,23 @@ func TestServerSettingsBackupScheduleFlexible(t *testing.T) {
 	}
 }
 
+func TestNotificationEventTestDataMixedTypes(t *testing.T) {
+	// Audiobookshelf sends testData values as a mix of strings and
+	// numbers, so the map must tolerate any JSON scalar.
+	var ev NotificationEvent
+	body := `{"name":"onTest","testData":{"libraryItemId":"li_1","episodeIndex":3}}`
+	if err := json.Unmarshal([]byte(body), &ev); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if ev.TestData["libraryItemId"] != "li_1" {
+		t.Errorf("testData string = %v", ev.TestData["libraryItemId"])
+	}
+	if ev.TestData["episodeIndex"].(float64) != 3 {
+		t.Errorf("testData number = %v", ev.TestData["episodeIndex"])
+	}
+}
+
 func TestSeriesSequencesFlexibleUnmarshal(t *testing.T) {
 	var fromArray MediaMetadata
 	if err := json.Unmarshal([]byte(`{"series":[{"id":"ser_1","name":"A","sequence":"1"}]}`), &fromArray); err != nil {
