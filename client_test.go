@@ -156,6 +156,50 @@ func TestServerSettingsBackupScheduleFlexible(t *testing.T) {
 	}
 }
 
+func TestMediaMetadataFlexibleFields(t *testing.T) {
+	// itunesId/itunesArtistId as numbers, publishedYear as a number, and
+	// the series field still flexibly decoded.
+	var numeric MediaMetadata
+	body := `{"title":"T","itunesId":123,"itunesArtistId":456,"publishedYear":2020,"series":{"id":"se_1","sequence":"2"}}`
+	if err := json.Unmarshal([]byte(body), &numeric); err != nil {
+		t.Fatalf("numeric: %v", err)
+	}
+	if numeric.Title != "T" {
+		t.Errorf("Title = %q (sibling fields must still decode)", numeric.Title)
+	}
+	if numeric.ITunesID != 123 || numeric.ITunesArtistID != 456 {
+		t.Errorf("itunes ids = %d/%d", numeric.ITunesID, numeric.ITunesArtistID)
+	}
+	if numeric.PublishedYear != "2020" {
+		t.Errorf("PublishedYear = %q, want \"2020\"", numeric.PublishedYear)
+	}
+	if len(numeric.Series) != 1 || numeric.Series[0].Sequence != "2" {
+		t.Errorf("series not decoded through custom unmarshaller: %+v", numeric.Series)
+	}
+
+	// Same fields as quoted strings.
+	var stringy MediaMetadata
+	body = `{"itunesId":"789","itunesArtistId":"101112","publishedYear":"1999"}`
+	if err := json.Unmarshal([]byte(body), &stringy); err != nil {
+		t.Fatalf("stringy: %v", err)
+	}
+	if stringy.ITunesID != 789 || stringy.ITunesArtistID != 101112 {
+		t.Errorf("itunes ids = %d/%d", stringy.ITunesID, stringy.ITunesArtistID)
+	}
+	if stringy.PublishedYear != "1999" {
+		t.Errorf("PublishedYear = %q", stringy.PublishedYear)
+	}
+
+	// Null/absent values yield zero values, not errors.
+	var empty MediaMetadata
+	if err := json.Unmarshal([]byte(`{"itunesId":null,"publishedYear":null}`), &empty); err != nil {
+		t.Fatalf("null: %v", err)
+	}
+	if empty.ITunesID != 0 || empty.PublishedYear != "" {
+		t.Errorf("null handling: id=%d year=%q", empty.ITunesID, empty.PublishedYear)
+	}
+}
+
 func TestNotificationEventTestDataMixedTypes(t *testing.T) {
 	// Audiobookshelf sends testData values as a mix of strings and
 	// numbers, so the map must tolerate any JSON scalar.

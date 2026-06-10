@@ -3,6 +3,8 @@ package audiobookshelf
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
+	"strings"
 )
 
 // The Audiobookshelf API returns most schemas in several variants (base,
@@ -172,6 +174,66 @@ type MediaMetadata struct {
 	ITunesArtistID int64  `json:"itunesArtistId,omitempty"`
 	// Type is "episodic" or "serial" for podcasts.
 	Type string `json:"type,omitempty"`
+}
+
+// UnmarshalJSON tolerates Audiobookshelf's loose typing of a few metadata
+// fields: itunesId and itunesArtistId arrive as either a JSON number or a
+// quoted string, and publishedYear as either a string or a number.
+func (m *MediaMetadata) UnmarshalJSON(data []byte) error {
+	type alias MediaMetadata
+	aux := struct {
+		ITunesID       json.RawMessage `json:"itunesId"`
+		ITunesArtistID json.RawMessage `json:"itunesArtistId"`
+		PublishedYear  json.RawMessage `json:"publishedYear"`
+		*alias
+	}{alias: (*alias)(m)}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	m.ITunesID = flexInt64(aux.ITunesID)
+	m.ITunesArtistID = flexInt64(aux.ITunesArtistID)
+	m.PublishedYear = flexString(aux.PublishedYear)
+
+	return nil
+}
+
+// flexInt64 decodes a JSON number or quoted number into an int64. Any
+// other value (null, empty, or non-numeric) yields 0.
+func flexInt64(raw json.RawMessage) int64 {
+	if len(raw) == 0 {
+		return 0
+	}
+
+	var n int64
+	if err := json.Unmarshal(raw, &n); err == nil {
+		return n
+	}
+
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+			return v
+		}
+	}
+
+	return 0
+}
+
+// flexString decodes a JSON string or number into a string. A null or
+// empty value yields "".
+func flexString(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+
+	return strings.TrimSpace(string(raw))
 }
 
 // SeriesSequence is a series a book belongs to, with the book's position
