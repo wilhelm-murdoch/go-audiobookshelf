@@ -10,11 +10,15 @@ services:
     # see the tags at ghcr.io/advplyr/audiobookshelf.
     image: ghcr.io/advplyr/audiobookshelf:latest
     # Woodpecker sets every container's working directory to the cloned
-    # repo workspace. Audiobookshelf's image starts with a *relative*
-    # `node index.js`, so the changed workdir makes Node look for the entry
-    # script in the workspace and fail with MODULE_NOT_FOUND. Start it
-    # explicitly from its own app directory instead.
-    entrypoint: ["/bin/sh", "-c", "cd /app && node index.js"]
+    # repo workspace, so Audiobookshelf's relative `node index.js` must be
+    # started from its own app dir. Woodpecker also force-stops services
+    # when the workflow ends; Node would otherwise exit 143 on SIGTERM and
+    # show the service as "failed". Trap the signal and exit 0 so a normal
+    # teardown stays green.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'trap "exit 0" TERM INT; cd /app && node index.js & wait'
     environment:
       PORT: "13378"
 
