@@ -750,6 +750,31 @@ type ServerSettings struct {
 	Version                      string   `json:"version,omitempty"`
 }
 
+// UnmarshalJSON tolerates Audiobookshelf returning backupSchedule as a
+// boolean (false when auto-backups are disabled) rather than a cron
+// string. A boolean is treated as an empty schedule.
+func (s *ServerSettings) UnmarshalJSON(data []byte) error {
+	type alias ServerSettings
+	aux := struct {
+		BackupSchedule json.RawMessage `json:"backupSchedule"`
+		*alias
+	}{alias: (*alias)(s)}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	s.BackupSchedule = ""
+	if len(aux.BackupSchedule) > 0 {
+		var sched string
+		if err := json.Unmarshal(aux.BackupSchedule, &sched); err == nil {
+			s.BackupSchedule = sched
+		}
+	}
+
+	return nil
+}
+
 // RSSFeed is an open RSS feed for a library item, collection, or series.
 type RSSFeed struct {
 	ID            string           `json:"id,omitempty"`

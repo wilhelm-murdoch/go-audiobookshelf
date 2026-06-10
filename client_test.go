@@ -133,6 +133,29 @@ func TestLoginStoresToken(t *testing.T) {
 	}
 }
 
+func TestServerSettingsBackupScheduleFlexible(t *testing.T) {
+	// Disabled auto-backups: Audiobookshelf returns a boolean.
+	var disabled ServerSettings
+	if err := json.Unmarshal([]byte(`{"backupSchedule":false,"backupsToKeep":2}`), &disabled); err != nil {
+		t.Fatalf("bool schedule: %v", err)
+	}
+	if disabled.BackupSchedule != "" {
+		t.Errorf("BackupSchedule = %q, want empty", disabled.BackupSchedule)
+	}
+	if disabled.BackupsToKeep != 2 {
+		t.Errorf("BackupsToKeep = %d, want 2 (other fields must still decode)", disabled.BackupsToKeep)
+	}
+
+	// Enabled: a cron string.
+	var enabled ServerSettings
+	if err := json.Unmarshal([]byte(`{"backupSchedule":"30 1 * * *"}`), &enabled); err != nil {
+		t.Fatalf("string schedule: %v", err)
+	}
+	if enabled.BackupSchedule != "30 1 * * *" {
+		t.Errorf("BackupSchedule = %q", enabled.BackupSchedule)
+	}
+}
+
 func TestSeriesSequencesFlexibleUnmarshal(t *testing.T) {
 	var fromArray MediaMetadata
 	if err := json.Unmarshal([]byte(`{"series":[{"id":"ser_1","name":"A","sequence":"1"}]}`), &fromArray); err != nil {
