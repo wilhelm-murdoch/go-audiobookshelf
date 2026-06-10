@@ -192,6 +192,10 @@ ABS_BASE_URL=http://localhost:13378 make integration
 
 CI (GitHub Actions and Woodpecker) runs vet, tests, lint, and the integration suite against a pinned Audiobookshelf container.
 
+## AI Disclosure
+
+Developing API bindings requires exhaustive effort to achieve full coverage. My process involves architecting the base structure of the module myself, then leveraging AI to assist with time-consuming tasks like documentation, testing, and bug hunting. I also use it to bounce ideas off of for structural optimization to ensure it's easy for others to implement. For a solo developer, this approach is invaluable for delivering high-quality code efficiently. It is used strictly as a tool, not a crutch.
+
 ## License
 
 [MIT](LICENSE) © nightcity-network
