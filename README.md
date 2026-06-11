@@ -1,5 +1,11 @@
 # go-audiobookshelf
 
+![CI Status](https://github.com/wilhelm-murdoch/go-audiobookshelf/actions/workflows/go.yml/badge.svg)
+![Release Status](https://github.com/wilhelm-murdoch/go-audiobookshelf/actions/workflows/release.yml/badge.svg)
+[![GoDoc](https://godoc.org/github.com/wilhelm-murdoch/go-audiobookshelf?status.svg)](https://pkg.go.dev/github.com/wilhelm-murdoch/go-audiobookshelf)
+[![Go report](https://goreportcard.com/badge/github.com/wilhelm-murdoch/go-audiobookshelf)](https://goreportcard.com/report/github.com/wilhelm-murdoch/go-audiobookshelf)
+[![Stability: Active](https://masterminds.github.io/stability/active.svg)](https://masterminds.github.io/stability/active.html)
+
 A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobookshelf.org/) API, covering the full API surface documented at [api.audiobookshelf.org](https://api.audiobookshelf.org/).
 
 - **Complete coverage** - every endpoint group in the official docs, plus generic `Get`/`Post`/… escape hatches for anything not yet modeled.
