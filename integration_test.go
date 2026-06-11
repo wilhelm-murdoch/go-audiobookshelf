@@ -12,7 +12,7 @@
 // needs no seeded media (server lifecycle, users, libraries, collections,
 // playlists, tags/genres, settings). Media-dependent endpoints (items,
 // covers, play sessions, scans, podcast downloads) are intentionally out
-// of scope here — they require mounted fixtures and async scan polling.
+// of scope here - they require mounted fixtures and async scan polling.
 package audiobookshelf
 
 import (
@@ -190,8 +190,8 @@ func TestIntegrationLibraryAndPlaylist(t *testing.T) {
 		t.Errorf("Library().ID = %q, want %q", fetched.ID, lib.ID)
 	}
 
-	// NOTE: collections cannot be created empty — Audiobookshelf rejects
-	// them with "No books" — so collection CRUD is deferred to the
+	// NOTE: collections cannot be created empty - Audiobookshelf rejects
+	// them with "No books" - so collection CRUD is deferred to the
 	// media-dependent (tier 2) suite. Playlists may be created empty.
 	pl, err := itClient.CreatePlaylist(ctx, &CreatePlaylistRequest{
 		LibraryID: lib.ID,

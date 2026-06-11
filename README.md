@@ -2,13 +2,14 @@
 
 A practical, idiomatic Go client for the [Audiobookshelf](https://www.audiobookshelf.org/) API, covering the full API surface documented at [api.audiobookshelf.org](https://api.audiobookshelf.org/).
 
-- **Complete coverage** — every endpoint group in the official docs, plus generic `Get`/`Post`/… escape hatches for anything not yet modeled.
-- **Chainable resource handles** — `client.Library(...).Items(...)`, or call everything directly by ID.
-- **Honest types** — millisecond timestamps and second durations come with `time.Time` / `time.Duration` helpers.
-- **Context first** — every method takes a `context.Context`, so cancellation and timeouts just work.
-- **Verified against a live server** — integration tests run against a real Audiobookshelf container in CI.
+- **Complete coverage** - every endpoint group in the official docs, plus generic `Get`/`Post`/… escape hatches for anything not yet modeled.
+- **Chainable resource handles** - `client.Library(...).Items(...)`, or call everything directly by ID.
+- **Honest types** - millisecond timestamps and second durations come with `time.Time` / `time.Duration` helpers.
+- **Context first** - every method takes a `context.Context`, so cancellation and timeouts just work.
+- **Verified against a live server** - integration tests run against a real Audiobookshelf container in CI.
 
-> **Status:** `v0.x`. The API is still settling and minor releases may introduce breaking changes, so pin a version. It requires **Go 1.26+**.
+> [!IMPORTANT]
+> The API is still settling and minor releases may introduce breaking changes, so pin a version. It requires **Go 1.26+**.
 
 ```sh
 go get github.com/wilhelm-murdoch/go-audiobookshelf
@@ -16,7 +17,7 @@ go get github.com/wilhelm-murdoch/go-audiobookshelf
 
 ## Compatibility
 
-This client is versioned on its own [SemVer](https://semver.org/) — the version reflects changes to the Go API, not the server. Each release is verified in CI against a specific Audiobookshelf version (`TestedServerVersion`); other server versions usually work, and a mismatch is the first thing to check when a response fails to decode.
+This client is versioned on its own [SemVer](https://semver.org/) - the version reflects changes to the Go API, not the server. Each release is verified in CI against a specific Audiobookshelf version (`TestedServerVersion`); other server versions usually work, and a mismatch is the first thing to check when a response fails to decode.
 
 | go-audiobookshelf | Tested against Audiobookshelf |
 | ----------------- | ----------------------------- |
@@ -108,9 +109,11 @@ page, err := client.LibraryItems(ctx, libraryID, &audiobookshelf.LibraryItemList
 	Page:  1, // the second page
 	Sort:  "media.metadata.title",
 })
+
 if err != nil {
 	log.Fatal(err)
 }
+
 fmt.Printf("page %d of %d total items\n", page.Page, page.Total)
 ```
 
@@ -136,7 +139,7 @@ if errors.As(err, &apiErr) {
 
 ## Debugging
 
-`WithDebug` logs every request and response — method, URL, headers, and body — to any `io.Writer`, which is the fastest way to see what the server actually sends when a response won't decode:
+`WithDebug` logs every request and response - method, URL, headers, and body - to any `io.Writer`, which is the fastest way to see what the server actually sends when a response won't decode:
 
 ```go
 client := audiobookshelf.NewClient("https://abs.example.com",
@@ -196,7 +199,7 @@ make vet     # go vet
 make fmt     # gofmt the tree
 ```
 
-The HTTP transport, path building, error model, and authentication live in `internal/rest` — a small, API-agnostic toolkit that the typed client wraps. It has its own tests and is the seam to reuse if you ever build another SDK on the same base.
+The HTTP transport, path building, error model, and authentication live in `internal/rest` - a small, API-agnostic toolkit that the typed client wraps. It has its own tests and is the seam to reuse if you ever build another SDK on the same base.
 
 Functional tests run against a real server and are gated behind the `integration` build tag and the `ABS_BASE_URL` environment variable, so they stay out of the normal unit run:
 
@@ -208,8 +211,8 @@ CI (GitHub Actions and Woodpecker) runs vet, tests, lint, and the integration su
 
 ## AI Disclosure
 
-Developing API bindings requires exhaustive effort to achieve full coverage. My process involves architecting the base structure of the module myself, then leveraging AI to assist with time-consuming tasks like documentation, testing, and bug hunting. I also use it to bounce ideas off of for structural optimization to ensure it's easy for others to implement. For a solo developer, this approach is invaluable for delivering high-quality code efficiently. It is used strictly as a tool, not a crutch.
+The architecture, base functionality and structure of this module are my own. I use AI as a tool to assist with time-consuming work - documentatiodn, tests, and bug hunting - and as a sounding board for structural decisions that keep the package easy to adopt. For a solo developer it's a force multiplier for shipping high-quality code efficiently; simply a tool, not a crutch.
 
 ## License
 
-[MIT](LICENSE) © nightcity-network
+[MIT](LICENSE) © Wilhelm Murdoch

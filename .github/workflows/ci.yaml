@@ -3,7 +3,7 @@
 # Differences from Woodpecker that matter:
 #   - Actions runs service containers with their own image entrypoint and
 #     does NOT mount the repo workspace into them, so the Woodpecker
-#     `cd /app && node index.js` / signal-trap workaround is unnecessary —
+#     `cd /app && node index.js` / signal-trap workaround is unnecessary -
 #     the audiobookshelf image starts cleanly on its own.
 #   - The job runs on the runner host (not in a container), so the service
 #     is reached via a published port on localhost rather than by name.

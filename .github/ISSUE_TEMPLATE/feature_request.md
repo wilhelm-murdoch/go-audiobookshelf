@@ -7,9 +7,7 @@ labels: enhancement
 
 ### What's missing
 
-Describe the endpoint, option, or behavior you'd like. If it maps to a
-specific Audiobookshelf API route, link the
-[API docs](https://api.audiobookshelf.org/) entry.
+Describe the endpoint, option, or behavior you'd like. If it maps to a specific Audiobookshelf API route, link the [API docs](https://api.audiobookshelf.org/) entry.
 
 ### Use case
 

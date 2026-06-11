@@ -27,7 +27,7 @@ var sensitiveHeaders = map[string]bool{
 // WithDebug logs every request and response (method, URL, headers, and
 // body) to w. It is a debugging aid, not a production logger.
 //
-// Security: bodies are printed as-is and may contain secrets — most
+// Security: bodies are printed as-is and may contain secrets - most
 // notably the username and password sent by Login. The Authorization and
 // cookie headers are redacted, but request/response bodies are not, so
 // never enable this against a server reachable over an untrusted network

@@ -5,7 +5,7 @@ configurable HTTP client with pluggable authentication, JSON and multipart
 helpers, a path/query builder, and a structured error type.
 
 It carries no knowledge of any particular API. It is meant to be wrapped by
-a typed, domain-specific client — `github.com/wilhelm-murdoch/go-audiobookshelf`
+a typed, domain-specific client - `github.com/wilhelm-murdoch/go-audiobookshelf`
 is the reference consumer.
 
 > **Status:** internal package. It lives under `internal/` and is not
@@ -54,12 +54,12 @@ Options apply in order; later options win (e.g. `WithHTTPClient` after
 
 ### Requests
 
-- `Get`, `Post`, `Patch`, `Put`, `Delete` — JSON in/out. Pass `nil` for the
+- `Get`, `Post`, `Patch`, `Put`, `Delete` - JSON in/out. Pass `nil` for the
   body to send none, and `nil` for `out` to discard the response.
-- `GetBinary(ctx, path) (io.ReadCloser, string, error)` — raw downloads
+- `GetBinary(ctx, path) (io.ReadCloser, string, error)` - raw downloads
   (images, files). The caller closes the reader; the string is the
   `Content-Type`.
-- `PostMultipart(ctx, path, fields, files, out)` — streaming
+- `PostMultipart(ctx, path, fields, files, out)` - streaming
   `multipart/form-data` uploads via `io.Pipe`.
 
 ```go
@@ -101,7 +101,7 @@ rest.NewPath("/api").Lit("items").Seg(id).Flag("hard", true).String()
 | `Flag(key, bool)` | Add `key=1` when true, nothing when false |
 | `String()` | Render `prefix/seg/...?query` (query keys sorted by `url.Values.Encode`) |
 
-> Never pass user input to `Lit` or `NewPath` — those are verbatim. Anything
+> Never pass user input to `Lit` or `NewPath` - those are verbatim. Anything
 > caller-supplied goes through `Seg`.
 
 ## Errors
@@ -192,7 +192,7 @@ func (c *Client) Thing(ctx context.Context, id string) (*Thing, error) {
 
 ## Testing
 
-The package is exercised by `rest_test.go` using `net/http/httptest` —
+The package is exercised by `rest_test.go` using `net/http/httptest` -
 real HTTP round-trips, no mocking. Run it with the rest of the suite:
 
 ```sh
